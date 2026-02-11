@@ -8,10 +8,10 @@ export default function Footer() {
 
                     <div className="text-center md:text-left">
                         <h2 className="text-3xl font-serif font-bold tracking-wide mb-4">
-                            Lumier<span className="text-primary">.</span>
+                            TUNER<span className="text-primary">.</span>
                         </h2>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
-                            女性のための姿勢改善パーソナルジム。<br />
+                            忙しいママのための姿勢改善セルフパーソナル。<br />
                             本来の美しさを取り戻す、特別な場所。
                         </p>
                     </div>
@@ -29,7 +29,7 @@ export default function Footer() {
                             </a>
                         </div>
                         <p className="text-gray-500 text-xs">
-                            &copy; {new Date().getFullYear()} Lumier. All rights reserved.
+                            &copy; {new Date().getFullYear()} TUNER. All rights reserved.
                         </p>
                     </div>
                 </div>

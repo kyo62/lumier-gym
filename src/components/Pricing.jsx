@@ -4,27 +4,27 @@ import { cn } from '../lib/utils';
 
 const plans = [
     {
-        name: "Regular",
-        price: "8,000",
+        name: "Trial",
+        price: "3,300",
         period: "1回 / 60分",
-        description: "都度払いで気軽に通いたい方向け",
-        features: ["姿勢分析チェック", "パーソナルトレーニング", "ウォーターサーバー利用可"],
+        description: "まずは姿勢改善の効果を実感したい方に",
+        features: ["姿勢分析チェック", "セルフパーソナル体験", "カウンセリング", "ウェア・タオル無料レンタル"],
         recommended: false
     },
     {
-        name: "Short Course",
-        price: "60,000",
-        period: "2ヶ月 / 8回",
-        description: "短期間で基礎を作りたい方に",
-        features: ["姿勢分析チェック", "食事アドバイス", "ウェア・タオル無料レンタル", "プロテイン1杯無料/回"],
+        name: "Standard",
+        price: "15,800",
+        period: "月額 / 通い放題",
+        description: "自分のペースでしっかり通いたい方に",
+        features: ["通い放題", "毎月の姿勢チェック", "食事アドバイス", "LINE相談サポート"],
         recommended: true
     },
     {
-        name: "Standard Course",
-        price: "110,000",
-        period: "3ヶ月 / 16回",
-        description: "根本から体を変えたい方に",
-        features: ["姿勢分析チェック", "徹底食事管理サポート", "ウェア・タオル無料レンタル", "24時間LINE相談"],
+        name: "Ticket",
+        price: "44,000",
+        period: "10回券 / 3ヶ月有効",
+        description: "忙しくて定期的に来れない方に",
+        features: ["1回あたり4,400円", "土日利用OK", "ウェア・タオル無料レンタル", "繰り越しOK"],
         recommended: false
     }
 ];

@@ -4,18 +4,18 @@ import { Sparkles, Heart, Scale } from 'lucide-react';
 const features = [
     {
         icon: <Scale className="w-8 h-8" />,
-        title: "骨格から整える美姿勢メソッド",
-        description: "筋肉を大きくするのではなく、骨格バランスを整えることで、しなやかで女性らしいボディラインを作ります。"
+        title: "姿勢改善 × ダイエット",
+        description: "骨格の歪みを整えることで、代謝を上げ、無理なく痩せやすい身体へ。産後ダイエットにも最適です。"
     },
     {
         icon: <Sparkles className="w-8 h-8" />,
-        title: "完全個室のプライベート空間",
-        description: "周りの目を気にせず、自分自身と向き合える上質な空間。アロマの香りと心地よい音楽でリラックス効果も。"
+        title: "忙しいママに嬉しい「時短」",
+        description: "1回30分〜の短時間集中プログラム。家事や育児の合間に、効率よく理想の自分へ近づけます。"
     },
     {
         icon: <Heart className="w-8 h-8" />,
-        title: "一生モノの身体知",
-        description: "一時的な変化ではなく、日常生活での体の使い方から指導。リバウンドしない「太らない体」を手に入れます。"
+        title: "セルフパーソナルの手軽さ",
+        description: "パーソナルの丁寧さと、セルフの気楽さを両立。自分のペースで続けられる、新しいフィットネスの形です。"
     }
 ];
 
@@ -30,8 +30,8 @@ export default function Features() {
                     transition={{ duration: 0.6 }}
                     viewport={{ once: true }}
                 >
-                    <span className="text-primary font-medium tracking-widest uppercase mb-2 block">Why Choose Us</span>
-                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-800">Lumierが選ばれる理由</h2>
+                    <span className="text-primary font-medium tracking-widest uppercase mb-2 block">Why Choose TUNER.</span>
+                    <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-800">TUNER.が選ばれる理由</h2>
                 </motion.div>
 
                 <div className="grid md:grid-cols-3 gap-8 lg:gap-12">

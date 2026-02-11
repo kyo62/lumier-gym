@@ -32,7 +32,7 @@ export default function Header() {
         >
             <div className="container mx-auto px-6 flex justify-between items-center">
                 <a href="#" className="text-2xl font-serif font-bold text-gray-800 tracking-wide">
-                    Lumier<span className="text-primary">.</span>
+                    TUNER<span className="text-primary">.</span>
                 </a>
 
                 {/* Desktop Nav */}

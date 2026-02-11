@@ -20,15 +20,15 @@ export default function Hero() {
                     transition={{ duration: 1, delay: 0.2 }}
                 >
                     <p className="text-primary font-medium tracking-[0.2em] mb-4 text-lg">
-                        PRIVATE PERSONAL GYM
+                        SELF PERSONAL GYM for MAMA
                     </p>
                     <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-gray-800 mb-6 leading-tight">
-                        本来の美しさは、<br />
-                        <span className="italic font-light">姿勢</span>から生まれる。
+                        本来の美しさを、<br />
+                        <span className="italic font-light">チューニング</span>する。
                     </h1>
                     <p className="text-gray-600 max-w-lg mx-auto mb-10 text-base md:text-lg leading-relaxed">
-                        ただ痩せるだけでなく、骨格から整える。<br className="hidden md:block" />
-                        女性のための、洗練された姿勢改善メソッド。
+                        忙しいママのための、姿勢改善×ダイエット。<br className="hidden md:block" />
+                        少ない時間で「なりたい姿」を叶える場所。
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">

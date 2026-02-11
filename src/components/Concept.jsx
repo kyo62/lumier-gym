@@ -35,23 +35,23 @@ export default function Concept() {
                         transition={{ duration: 0.8, delay: 0.2 }}
                         viewport={{ once: true }}
                     >
-                        <span className="text-primary font-medium tracking-widest uppercase mb-4 block">Concept</span>
+                        <span className="text-primary font-medium tracking-widest uppercase mb-4 block">About TUNER.</span>
                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold text-gray-800 mb-8 leading-tight">
                             「鍛える」のではなく、<br />
                             「整える」という選択。
                         </h2>
                         <div className="space-y-6 text-gray-600 leading-relaxed text-lg">
                             <p>
-                                私たちの体は、日々の生活習慣によって少しずつ歪んでいきます。
-                                無理なトレーニングで筋肉をつける前に、まずは骨格を本来の位置に戻すこと。
+                                産後の体型変化や、日々の家事・育児での疲れ。<br />
+                                忙しいママにとって、ジムに通う時間は貴重です。
                             </p>
                             <p>
-                                姿勢が整えば、呼吸が深くなり、代謝が上がり、
-                                自然と引き締まった美しいラインが生まれます。
+                                TUNER.は、無理なトレーニングで筋肉をつけるのではなく、<br />
+                                骨格から身体を「チューニング（整える）」するメソッド。
                             </p>
                             <p>
-                                Lumierでは、あなた自身の体が持つ「美しくなる力」を最大限に引き出す
-                                オーダーメイドのプログラムを提供します。
+                                姿勢が整えば、呼吸が深くなり、代謝が上がり、<br />
+                                自然と痩せやすい、しなやかな身体へと変化します。
                             </p>
                         </div>
                     </motion.div>
