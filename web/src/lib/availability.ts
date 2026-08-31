@@ -4,7 +4,6 @@ import {
   getJstWeekday,
   jstToDate,
   minutesToTime,
-  normalizeTime,
   timeToMinutes,
   todayKey,
 } from './time';
@@ -157,18 +156,3 @@ export function computeAvailability(input: AvailabilityInput): DayAvailability[]
 export function blockEnd(startsAt: Date, durationMin: number, bufferMin: number): Date {
   return new Date(startsAt.getTime() + (durationMin + bufferMin) * 60 * 1000);
 }
-
-/** 選択された開始時刻が、その日の営業時間の枠として妥当かを検証する（サーバー側の二重チェック用） */
-export function isValidSlotStart(startsAt: Date, slotStepMin: number): boolean {
-  const minutes = timeToMinutes(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Tokyo',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(startsAt)
-  );
-  return minutes % slotStepMin === 0 && startsAt.getUTCSeconds() === 0;
-}
-
-export { normalizeTime };

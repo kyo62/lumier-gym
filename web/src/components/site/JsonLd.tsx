@@ -1,4 +1,4 @@
-import { site, menus, defaultBusinessHours, WEEKDAY_LABELS } from '@/config/site';
+import { site, menus, defaultBusinessHours } from '@/config/site';
 
 const SCHEMA_DAYS = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
@@ -49,5 +49,3 @@ export function LocalBusinessJsonLd() {
     />
   );
 }
-
-export { WEEKDAY_LABELS };

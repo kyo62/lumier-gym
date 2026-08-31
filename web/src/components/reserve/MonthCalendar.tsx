@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { buildMonthGrid, dayOfMonth, formatMonthLabel, shiftMonth, toMonthKey } from '@/lib/calendar';
+import { buildMonthGrid, dayOfMonth, formatMonthLabel, shiftMonth } from '@/lib/calendar';
 import { WEEKDAY_LABELS } from '@/config/site';
 import { cn } from '@/lib/utils';
 
@@ -114,5 +114,3 @@ export function MonthCalendar({
     </div>
   );
 }
-
-export { toMonthKey };

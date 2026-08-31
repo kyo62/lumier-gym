@@ -65,10 +65,14 @@ export async function updateBookingStatus(formData: FormData): Promise<void> {
   if (!id || !['confirmed', 'cancelled', 'done'].includes(status)) return;
 
   const supabase = createAdminClient();
-  await supabase
+  const { error } = await supabase
     .from('bookings')
     .update({ status, cancelled_at: status === 'cancelled' ? new Date().toISOString() : null })
     .eq('id', id);
+
+  // キャンセル済みの予約を「予約済み」に戻すとき、その枠に別の予約が
+  // 入っていると排他制約(23P01)に触れる。画面を落とさずログに残す。
+  if (error) console.error('[admin] 予約ステータスの更新に失敗しました', error);
 
   revalidatePath('/admin');
   revalidatePath('/admin/schedule');

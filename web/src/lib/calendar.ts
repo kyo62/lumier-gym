@@ -1,4 +1,4 @@
-import { addDaysToKey, getJstWeekday, jstToDate, toDateKey } from './time';
+import { addDaysToKey, getJstWeekday, toDateKey } from './time';
 
 /** 'yyyy-MM' → その月の1日の日付キー */
 export function monthStartKey(monthKey: string): string {
@@ -55,5 +55,3 @@ export function formatMonthLabel(monthKey: string): string {
   const [year, month] = monthKey.split('-');
   return `${year}年${Number(month)}月`;
 }
-
-export { jstToDate };

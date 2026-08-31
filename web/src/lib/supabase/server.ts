@@ -28,17 +28,28 @@ export async function createSupabaseServerClient() {
   });
 }
 
-/** ログイン中の管理者を返す。未ログインなら null */
+/**
+ * ログイン中の管理者を返す。管理者でなければ null。
+ *
+ * ADMIN_EMAIL と一致するアドレスだけを管理者として扱う。
+ * ADMIN_EMAIL が未設定のときは「誰も管理者ではない」とする ―
+ * ここを素通りさせると、Supabaseにサインアップした任意のユーザーが
+ * 管理画面に入れてしまう。
+ */
 export async function getAdminUser() {
   if (!env.supabaseUrl || !env.supabaseAnonKey) return null;
+  if (!env.adminEmail) {
+    console.warn('[auth] ADMIN_EMAIL が未設定のため、管理画面へのアクセスをすべて拒否します。');
+    return null;
+  }
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
-  // 環境変数で許可したアドレス以外は管理者として扱わない
-  if (env.adminEmail && user.email?.toLowerCase() !== env.adminEmail.toLowerCase()) {
-    return null;
-  }
+
+  if (!user?.email) return null;
+  if (user.email.toLowerCase() !== env.adminEmail.toLowerCase()) return null;
+
   return user;
 }

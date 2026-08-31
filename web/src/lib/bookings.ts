@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from './supabase/admin';
 import { canWriteBookings } from './env';
 import {
+  blockEnd,
   computeAvailability,
   type BusinessHour,
   type BusyInterval,
@@ -134,7 +135,7 @@ export async function createBooking(params: {
     return { ok: false, code: 'unavailable', message: 'その時間帯は予約できません。別の枠をお選びください。' };
   }
 
-  const endsAt = new Date(startsAt.getTime() + (menu.durationMin + menu.bufferMin) * 60 * 1000);
+  const endsAt = blockEnd(startsAt, menu.durationMin, menu.bufferMin);
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('bookings')
