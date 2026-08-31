@@ -1,16 +1,27 @@
-# React + Vite
+# lumier-gym
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+姿勢改善サロン（名古屋市北区・完全予約制）の開業準備と、HP兼予約システムのリポジトリです。
 
-Currently, two official plugins are available:
+## 構成
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| ディレクトリ | 内容 |
+|---|---|
+| [`web/`](./web) | **HP兼予約システム（Next.js 16 + Supabase）**。実装はこちら。セットアップ手順は [`web/README.md`](./web/README.md) |
+| [`docs/`](./docs) | 開業タスクリストと、システムの技術選定・ロードマップ |
+| `src/`, `index.html` ほか | 初期に作成した React + Vite のランディングページ（参考用。`web/` に移行済み） |
 
-## React Compiler
+## ドキュメント
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [開業タスクリスト](./docs/salon-opening-checklist.md) — 物件交渉からオープン後30日までを、優先度と実行タイミング付きのチェックリストにしたもの
+- [予約システムの技術選定・ロードマップ](./docs/booking-system-roadmap.md) — 技術スタックの選定理由、DB設計、フェーズ別の開発手順
 
-## Expanding the ESLint configuration
+## はじめかた
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd web
+npm install
+cp .env.example .env.local   # 空のままでもデモモードで起動します
+npm run dev                  # http://localhost:3000
+```
+
+環境変数の設定、データベースの作成、デプロイ手順は [`web/README.md`](./web/README.md) を参照してください。
