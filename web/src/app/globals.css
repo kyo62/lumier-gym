@@ -1,25 +1,23 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   デザイントークン
-   清潔感（余白と細い罫線）と専門性（抑えた配色・明朝の見出し）を両立させる。
+   デザイントークン — 和モダン・ミニマル
+   温かみのあるグレージュを地に、チャコールで締め、真鍮ゴールドを線と小物に。
    色を足したくなったら、まず余白で解決できないかを先に考える。
    ========================================================================== */
 @theme {
-  --color-canvas: #faf9f6; /* ベースの生成り色 */
-  --color-surface: #ffffff;
-  --color-sand: #f2eee6; /* セクションの塗り分け */
-  --color-ink: #1f1d1a; /* 本文・見出し */
-  --color-muted: #6f6a62; /* 補助テキスト */
-  --color-line: #e3ded3; /* 罫線 */
-  --color-accent: #a8873f; /* 差し色（面には使わず、線と小さな要素に） */
-  --color-accent-soft: #f0e8d6;
-  --color-danger: #a4443a;
+  --color-canvas: #f6f3ee;        /* 温かみのあるグレージュ（地） */
+  --color-surface: #fffdfa;       /* カードなどの面 */
+  --color-sand: #ece6dc;          /* セクションの塗り分け */
+  --color-ink: #2e2b27;           /* チャコールグレー（本文・見出し） */
+  --color-muted: #6f6961;         /* 補助テキスト */
+  --color-line: #ddd5c8;          /* 罫線 */
+  --color-brass: #a8894f;         /* 真鍮ゴールド（差し色） */
+  --color-brass-soft: #ebe0cb;    /* 真鍮の淡い面 */
 
   --font-sans: var(--font-noto-sans-jp), "Hiragino Sans", "Hiragino Kaku Gothic ProN",
     Meiryo, system-ui, sans-serif;
-  --font-serif: var(--font-shippori-mincho), "Hiragino Mincho ProN", "Yu Mincho",
-    serif;
+  --font-serif: var(--font-shippori-mincho), "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
 
 :root {
@@ -28,14 +26,14 @@
 
 html {
   scroll-behavior: smooth;
-  /* ヘッダーの高さぶん、アンカー移動時に余白を確保する */
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 4.5rem;
 }
 
 body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  /* 日本語の約物を詰めて、和文の見た目を締める */
   font-feature-settings: "palt";
 }
 
@@ -43,7 +41,18 @@ body {
 h1, h2, h3, h4 {
   font-family: var(--font-serif);
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+}
+
+/* 数字・時刻を等幅に揃える（料金表と流れの時刻がガタつかない） */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 縦書きの小さなラベル（和モダンの記号として使う） */
+.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 /* ==========================================================================
@@ -52,16 +61,11 @@ h1, h2, h3, h4 {
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    transform: translateY(14px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
   }
   .reveal[data-visible="true"] {
     opacity: 1;
     transform: none;
   }
-}
-
-/* 数字や時刻を等幅に揃える（予約枠のボタンがガタつかない） */
-.tnum {
-  font-variant-numeric: tabular-nums;
 }

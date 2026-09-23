@@ -17,19 +17,21 @@ const shipporiMincho = Shippori_Mincho({
   display: 'swap',
 });
 
+const title = `${site.name}｜${site.address.city}・名城公園の${site.tagline}`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || site.url),
-  title: {
-    default: `${site.name}｜${site.address.city}の${site.tagline}`,
-    template: `%s｜${site.name}`,
-  },
+  title: { default: title, template: `%s｜${site.name}` },
   description: site.description,
-  keywords: ['姿勢改善', '整体', 'ストレッチ', site.address.city, 'パーソナルトレーナー', '完全予約制'],
+  keywords: [
+    '名城公園', '名古屋市北区', '姿勢改善', 'コンディショニング',
+    'パーソナル', 'ストレッチ', '肩こり', '完全個室', '完全予約制',
+  ],
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
     siteName: site.name,
-    title: `${site.name}｜${site.address.city}の${site.tagline}`,
+    title,
     description: site.description,
     url: site.url,
   },

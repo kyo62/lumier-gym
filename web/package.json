@@ -6,23 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "tsc src/lib/availability.ts src/lib/time.ts --outDir .test-build --module commonjs --target es2022 --moduleResolution node --skipLibCheck && node tests/availability.test.js"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.5",
-    "@supabase/supabase-js": "^2.112.4",
     "clsx": "^2.1.1",
-    "date-fns": "^4.4.0",
-    "date-fns-tz": "^3.2.0",
     "lucide-react": "^1.38.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.25.0",
-    "server-only": "^0.0.1",
-    "tailwind-merge": "^3.6.0",
-    "zod": "^4.5.4"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

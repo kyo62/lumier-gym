@@ -1,21 +1,18 @@
-import { site, menus, defaultBusinessHours } from '@/config/site';
-
-const SCHEMA_DAYS = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-] as const;
+import { site, allPlans, businessHours } from '@/config/site';
 
 /**
- * schema.org の LocalBusiness 構造化データ。
- * Googleの地図検索・ナレッジパネルでの表示に効く（名古屋市北区でのローカルSEO対策）。
+ * schema.org の構造化データ。
+ * Googleの地図検索・ナレッジパネルでの表示に効く（名城公園エリアのローカルSEO対策）。
  */
 export function LocalBusinessJsonLd() {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'HealthAndBeautyBusiness',
     name: site.name,
+    alternateName: site.nameKana,
     description: site.description,
+    slogan: site.catchphrase,
     url: site.url,
-    telephone: site.tel,
     email: site.email,
     address: {
       '@type': 'PostalAddress',
@@ -24,19 +21,14 @@ export function LocalBusinessJsonLd() {
       addressLocality: site.address.city,
       postalCode: site.address.postalCode,
     },
-    openingHoursSpecification: defaultBusinessHours.map((h) => ({
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: SCHEMA_DAYS[h.weekday],
-      opens: h.startTime,
-      closes: h.endTime,
-    })),
-    priceRange: `¥${Math.min(...menus.map((m) => m.price)).toLocaleString()}〜¥${Math.max(
-      ...menus.map((m) => m.price)
+    openingHours: businessHours.hours,
+    priceRange: `¥${Math.min(...allPlans.map((p) => p.price)).toLocaleString()}〜¥${Math.max(
+      ...allPlans.map((p) => p.price)
     ).toLocaleString()}`,
-    makesOffer: menus.map((m) => ({
+    makesOffer: allPlans.map((plan) => ({
       '@type': 'Offer',
-      name: m.name,
-      price: m.price,
+      name: plan.name,
+      price: plan.price,
       priceCurrency: 'JPY',
     })),
   };

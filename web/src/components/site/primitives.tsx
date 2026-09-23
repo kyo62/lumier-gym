@@ -1,13 +1,8 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { booking } from '@/config/site';
 
-export function Container({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export function Container({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn('mx-auto w-full max-w-5xl px-6', className)}>{children}</div>;
 }
 
@@ -19,41 +14,62 @@ export function SectionHeading({
   align = 'center',
 }: {
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   lead?: string;
   align?: 'center' | 'left';
 }) {
   return (
     <div className={cn('max-w-2xl', align === 'center' ? 'mx-auto text-center' : 'text-left')}>
-      <p className="mb-4 text-xs tracking-[0.25em] text-accent uppercase">{eyebrow}</p>
-      <h2 className="text-2xl leading-snug sm:text-3xl">{title}</h2>
-      {lead ? <p className="mt-5 text-sm leading-8 text-muted sm:text-base">{lead}</p> : null}
+      <p className="mb-5 text-[11px] tracking-[0.3em] text-brass uppercase">{eyebrow}</p>
+      <h2 className="text-2xl leading-[1.7] sm:text-[1.75rem]">{title}</h2>
+      {lead ? <p className="mt-6 text-sm leading-8 text-muted">{lead}</p> : null}
     </div>
   );
 }
 
-type ButtonProps = {
-  href: string;
-  children: React.ReactNode;
+/**
+ * 予約ボタン。
+ * Square の予約URLが未設定のあいだは「準備中」の見た目になり、
+ * 押しても何も起きない（誤って空リンクを踏ませない）。
+ */
+export function ReserveButton({
+  children = 'ご予約・体験のお申し込み',
+  variant = 'primary',
+  className,
+}: {
+  children?: React.ReactNode;
   variant?: 'primary' | 'outline';
   className?: string;
-};
-
-export function ButtonLink({ href, children, variant = 'primary', className }: ButtonProps) {
+}) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm tracking-wide transition-colors duration-200';
+    'inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-sm tracking-wider transition-colors duration-200';
   const styles =
     variant === 'primary'
-      ? 'bg-ink text-canvas hover:bg-accent'
-      : 'border border-line bg-surface text-ink hover:border-accent hover:text-accent';
+      ? 'bg-ink text-canvas hover:bg-brass'
+      : 'border border-line bg-surface text-ink hover:border-brass hover:text-brass';
+
+  if (!booking.squareUrl) {
+    return (
+      <span
+        aria-disabled
+        className={cn(base, 'cursor-not-allowed border border-dashed border-line bg-sand text-muted', className)}
+      >
+        予約ページ準備中
+      </span>
+    );
+  }
+
   return (
-    <Link href={href} className={cn(base, styles, className)}>
+    <a href={booking.squareUrl} target="_blank" rel="noreferrer noopener" className={cn(base, styles, className)}>
       {children}
-    </Link>
+    </a>
   );
 }
 
-/** 細い区切り線 */
-export function Rule({ className }: { className?: string }) {
-  return <hr className={cn('border-0 border-t border-line', className)} />;
+export function TextLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-brass underline underline-offset-4 transition-opacity hover:opacity-70">
+      {children}
+    </Link>
+  );
 }

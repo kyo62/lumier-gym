@@ -1,10 +1,9 @@
 import { ImageResponse } from 'next/og';
-import { site } from '@/config/site';
 
 export const size = { width: 64, height: 64 };
 export const contentType = 'image/png';
 
-/** 屋号の頭文字を使ったファビコンを生成する（画像ファイルを用意しなくてよい） */
+/** 屋号の頭文字を使ったファビコン（画像ファイルを用意しなくてよい） */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -15,14 +14,14 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#1f1d1a',
-          color: '#d9c48a',
-          fontSize: 38,
+          background: '#2e2b27',
+          color: '#d8bc84',
+          fontSize: 34,
           fontFamily: 'serif',
-          letterSpacing: '0.02em',
+          letterSpacing: '0.04em',
         }}
       >
-        {site.name.slice(0, 1).toUpperCase()}
+        T
       </div>
     ),
     size

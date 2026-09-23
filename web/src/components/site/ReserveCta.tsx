@@ -1,29 +1,35 @@
-import Link from 'next/link';
-import { Container } from './primitives';
+import { Container, ReserveButton } from './primitives';
 import { Reveal } from './Reveal';
-import { booking } from '@/config/site';
+import { booking, site } from '@/config/site';
 
 export function ReserveCta() {
   return (
-    <section className="border-t border-line bg-sand py-20 sm:py-24">
+    <section id="reserve" className="scroll-mt-20 border-t border-line py-20 sm:py-28">
       <Container className="text-center">
         <Reveal>
-          <p className="mb-4 text-xs tracking-[0.25em] text-accent uppercase">Reservation</p>
-          <h2 className="text-2xl leading-relaxed sm:text-3xl">
-            まずは、いまの姿勢を
+          <p className="mb-6 text-[11px] tracking-[0.3em] text-brass uppercase">Reservation</p>
+          <h2 className="text-2xl leading-[1.7] sm:text-[1.75rem]">
+            まずは、いまの身体を
             <br className="sm:hidden" />
             見にきてください。
           </h2>
-          <p className="mx-auto mt-6 max-w-lg text-sm leading-8 text-muted">
-            カレンダーから空いている枠を選ぶだけ。
-            {booking.leadTimeHours}時間前までご予約いただけます。
+          <p className="mx-auto mt-7 max-w-lg text-sm leading-8 text-muted">
+            入会金・事務手数料はいただきません。
+            <br />
+            手ぶらでお越しいただけます。
           </p>
-          <Link
-            href="/reserve"
-            className="mt-10 inline-flex items-center justify-center rounded-full bg-ink px-10 py-4 text-sm tracking-wide text-canvas transition-colors hover:bg-accent"
-          >
-            空き状況を見る
-          </Link>
+
+          <div className="mt-11">
+            <ReserveButton />
+          </div>
+
+          {!booking.squareUrl ? (
+            <p className="mt-6 text-xs leading-7 text-muted">
+              {/* === TODO: Squareの予約ページを作成したら config/site.ts の booking.squareUrl に設定してください */}
+              オンライン予約ページは準備中です。
+              {site.sns.instagram ? '公開までのご予約はInstagramのDMよりお願いいたします。' : null}
+            </p>
+          ) : null}
         </Reveal>
       </Container>
     </section>

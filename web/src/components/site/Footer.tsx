@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { Container } from './primitives';
-import { site } from '@/config/site';
+import { site, booking } from '@/config/site';
 
 export function Footer() {
   return (
@@ -9,21 +9,33 @@ export function Footer() {
       <Container>
         <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="font-serif text-xl tracking-[0.18em]">{site.name}</p>
-            <p className="mt-3 text-xs leading-6 text-canvas/60">
+            <p className="font-serif text-xl tracking-[0.22em]">{site.name}</p>
+            <p className="mt-1.5 text-[10px] tracking-[0.25em] text-canvas/50">{site.nameKana}</p>
+            <p className="mt-5 text-xs leading-7 text-canvas/60">
               {site.tagline}
               <br />
               {site.address.prefecture}
-              {site.address.city}
+              {site.address.city}・名城公園
             </p>
           </div>
 
           <nav className="flex flex-col gap-3 text-xs text-canvas/70">
-            <Link href="/reserve" className="transition-colors hover:text-canvas">
-              ご予約
-            </Link>
-            <Link href="/#menu" className="transition-colors hover:text-canvas">
+            {booking.squareUrl ? (
+              <a
+                href={booking.squareUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1.5 transition-colors hover:text-canvas"
+              >
+                ご予約
+                <ArrowUpRight size={12} aria-hidden />
+              </a>
+            ) : null}
+            <Link href="/#price" className="transition-colors hover:text-canvas">
               メニュー・料金
+            </Link>
+            <Link href="/#access" className="transition-colors hover:text-canvas">
+              アクセス
             </Link>
             <Link href="/terms" className="transition-colors hover:text-canvas">
               利用規約
@@ -39,10 +51,10 @@ export function Footer() {
             href={site.sns.instagram}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-10 inline-flex items-center gap-2 text-xs text-canvas/70 transition-colors hover:text-canvas"
+            className="mt-10 inline-flex items-center gap-1.5 text-xs text-canvas/70 transition-colors hover:text-canvas"
           >
             Instagram
-            <ArrowUpRight size={13} aria-hidden />
+            <ArrowUpRight size={12} aria-hidden />
           </a>
         ) : null}
 
