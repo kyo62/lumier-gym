@@ -85,19 +85,23 @@ export function Header() {
         </div>
       </div>
 
-      {open ? (
-        <nav id="mobile-nav" className="border-t border-line bg-canvas lg:hidden">
-          <ul className="px-6 py-2">
-            {links.map((link) => (
-              <li key={link.href} className="border-b border-line/60 last:border-0">
-                <Link href={link.href} className="block py-4 text-sm" onClick={() => setOpen(false)}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
+      {/* 常にDOMに置き、hidden属性で開閉する。
+          JavaScriptが無効な環境やプレビュー書き出しでも構造が壊れないようにするため。 */}
+      <nav
+        id="mobile-nav"
+        hidden={!open}
+        className="border-t border-line bg-canvas lg:hidden"
+      >
+        <ul className="px-6 py-2">
+          {links.map((link) => (
+            <li key={link.href} className="border-b border-line/60 last:border-0">
+              <Link href={link.href} className="block py-4 text-sm" onClick={() => setOpen(false)}>
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   );
 }

@@ -43,3 +43,6 @@ next-env.d.ts
 
 # test build output
 .test-build
+
+# 共有用プレビューの書き出し先
+preview

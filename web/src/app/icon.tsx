@@ -1,5 +1,8 @@
 import { ImageResponse } from 'next/og';
 
+/** 静的書き出し（output: 'export'）でファビコンを生成するために必要 */
+export const dynamic = 'force-static';
+
 export const size = { width: 64, height: 64 };
 export const contentType = 'image/png';
 

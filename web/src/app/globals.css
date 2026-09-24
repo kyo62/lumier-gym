@@ -15,9 +15,9 @@
   --color-brass: #a8894f;         /* 真鍮ゴールド（差し色） */
   --color-brass-soft: #ebe0cb;    /* 真鍮の淡い面 */
 
-  --font-sans: var(--font-noto-sans-jp), "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+  --font-sans: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
     Meiryo, system-ui, sans-serif;
-  --font-serif: var(--font-shippori-mincho), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
 
 :root {
