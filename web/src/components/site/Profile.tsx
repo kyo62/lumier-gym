@@ -1,6 +1,6 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { profile } from '@/config/site';
+import { profile, sections } from '@/config/site';
 
 export function Profile() {
   const years = new Date().getFullYear() - profile.since;
@@ -9,7 +9,10 @@ export function Profile() {
     <section id="profile" className="scroll-mt-20 border-t border-line bg-sand py-20 sm:py-28">
       <Container>
         <Reveal>
-          <SectionHeading eyebrow="Profile" title={`${profile.since}年から、現場で。`} />
+          <SectionHeading
+            eyebrow={sections.profile.eyebrow}
+            title={sections.profile.title.replace('{year}', String(profile.since))}
+          />
         </Reveal>
 
         <div className="mt-16 grid gap-12 md:grid-cols-[260px_1fr] md:gap-16">

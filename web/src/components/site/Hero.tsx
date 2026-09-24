@@ -1,11 +1,26 @@
-import { site, businessHours } from '@/config/site';
+import { site, businessHours, sections } from '@/config/site';
 import { ReserveButton } from './primitives';
+
+/** 見出しの一部だけを差し色にする。指定文字が含まれていなければそのまま返す */
+function withAccent(line: string, accent: string) {
+  if (!accent || !line.includes(accent)) return line;
+  const [before, ...rest] = line.split(accent);
+  return (
+    <>
+      {before}
+      <span className="text-brass">{accent}</span>
+      {rest.join(accent)}
+    </>
+  );
+}
 
 /**
  * 写真素材が用意できていない段階でも成立するよう、文字組みを主役にしている。
  * public/ に写真を置いたら、下の「写真の差し込み位置」のコメントを参照して置き換える。
  */
 export function Hero() {
+  const { headline, headlineAccent, lead, secondaryButton } = sections.hero;
+
   return (
     <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
       {/* 背景の淡いにじみ。写真を入れる場合はこのdivを <Image fill /> に置き換える */}
@@ -22,22 +37,24 @@ export function Hero() {
       </span>
 
       <div className="relative mx-auto w-full max-w-5xl px-6">
-        <p className="mb-8 text-[11px] leading-6 tracking-[0.3em] text-brass">
-          {site.tagline}
-        </p>
+        <p className="mb-8 text-[11px] leading-6 tracking-[0.3em] text-brass">{site.tagline}</p>
 
         <h1 className="text-[2rem] leading-[1.6] sm:text-[3.25rem] sm:leading-[1.5]">
-          がんばる前に、
-          <br />
-          まず<span className="text-brass">整える</span>。
+          {headline.map((line, i) => (
+            <span key={line} className="block">
+              {withAccent(line, headlineAccent)}
+              {i < headline.length - 1 ? null : null}
+            </span>
+          ))}
         </h1>
 
         <p className="mt-10 max-w-xl text-sm leading-9 text-muted sm:text-base">
-          激しい筋トレはしません。
-          <br className="hidden sm:block" />
-          呼吸と骨格のバランスを整えることから始める、
-          <br className="hidden sm:block" />
-          完全個室のコンディショニングサロンです。
+          {lead.map((line, i) => (
+            <span key={line}>
+              {line}
+              {i < lead.length - 1 ? <br className="hidden sm:block" /> : null}
+            </span>
+          ))}
         </p>
 
         <div className="mt-12 flex flex-col gap-3 sm:flex-row">
@@ -46,7 +63,7 @@ export function Hero() {
             href="#concept"
             className="inline-flex items-center justify-center rounded-full border border-line bg-surface px-9 py-4 text-sm tracking-wider transition-colors hover:border-brass hover:text-brass"
           >
-            サロンについて
+            {secondaryButton}
           </a>
         </div>
 

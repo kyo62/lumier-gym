@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 import { Container, SectionHeading, ReserveButton } from './primitives';
 import { Reveal } from './Reveal';
-import { monthlyPlans, singlePlans, booking, type Plan } from '@/config/site';
+import { monthlyPlans, singlePlans, booking, sections, type Plan } from '@/config/site';
 import { yen } from '@/lib/utils';
 
 function PlanCard({
@@ -58,15 +58,15 @@ export function Price() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Menu & Price"
-            title="メニュー・料金"
-            lead="すべて税込です。入会金・事務手数料はいただきません。"
+            eyebrow={sections.price.eyebrow}
+            title={sections.price.title}
+            lead={sections.price.lead}
           />
         </Reveal>
 
         {/* 月額プラン */}
         <Reveal className="mt-14">
-          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">継続してお通いいただく方へ</p>
+          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">{sections.price.monthlyLabel}</p>
           <div className="grid gap-6 md:grid-cols-2">
             {monthlyPlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} featured={plan.recommended} badgeSlot />
@@ -76,7 +76,7 @@ export function Price() {
 
         {/* 単発プラン */}
         <Reveal delay={80} className="mt-12">
-          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">単発でのご利用</p>
+          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">{sections.price.singleLabel}</p>
           <div className="grid gap-6 md:grid-cols-3">
             {singlePlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} />
@@ -87,9 +87,7 @@ export function Price() {
         {/* サポート制度・割引 */}
         <Reveal delay={120} className="mx-auto mt-12 max-w-3xl rounded-lg border border-line bg-sand p-8 sm:p-10">
           <p className="text-[11px] tracking-[0.3em] text-brass uppercase">Support</p>
-          <p className="mt-4 text-sm leading-7">
-            忙しくて通えない月があっても、損をしないように設計しています。
-          </p>
+          <p className="mt-4 text-sm leading-7">{sections.price.supportTitle}</p>
 
           <dl className="mt-7 space-y-6">
             {booking.support.map((item) => (

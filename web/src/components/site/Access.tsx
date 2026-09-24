@@ -1,6 +1,6 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { site, businessHours, policies } from '@/config/site';
+import { site, businessHours, policies, sections } from '@/config/site';
 
 export function Access() {
   return (
@@ -8,9 +8,9 @@ export function Access() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Access"
-            title="アクセス・ご利用にあたって"
-            lead={`地下鉄名城線「名城公園」駅からすぐ。マンションの一室の、完全個室のサロンです。`}
+            eyebrow={sections.access.eyebrow}
+            title={sections.access.title}
+            lead={sections.access.lead}
           />
         </Reveal>
 

@@ -1,13 +1,13 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { reasons } from '@/config/site';
+import { reasons, sections } from '@/config/site';
 
 export function Reasons() {
   return (
     <section id="reasons" className="scroll-mt-20 border-t border-line py-20 sm:py-28">
       <Container>
         <Reveal>
-          <SectionHeading eyebrow="Reasons" title="選ばれている3つの理由" />
+          <SectionHeading eyebrow={sections.reasons.eyebrow} title={sections.reasons.title} />
         </Reveal>
 
         <ul className="mt-16 space-y-px overflow-hidden rounded-lg border border-line bg-line">

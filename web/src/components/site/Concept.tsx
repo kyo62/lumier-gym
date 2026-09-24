@@ -1,6 +1,6 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { concerns, brand, site } from '@/config/site';
+import { concerns, brand, site, sections } from '@/config/site';
 
 export function Concept() {
   return (
@@ -8,15 +8,15 @@ export function Concept() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Concept"
-            title={<>ゆるめて終わり、にしない。</>}
-            lead="肩が内に巻き、骨盤が後ろに倒れ、呼吸が浅くなる。その状態のままでは、どれだけほぐしても数日で戻ります。TONEKAは、整えたあとに「正しく動ける状態」まで持っていきます。"
+            eyebrow={sections.concept.eyebrow}
+            title={sections.concept.title}
+            lead={sections.concept.lead}
           />
         </Reveal>
 
         {/* お悩みチェック */}
         <Reveal className="mx-auto mt-16 max-w-2xl rounded-lg border border-line bg-surface p-8 sm:p-10">
-          <p className="text-center text-sm tracking-wider text-muted">こんな方に向いています</p>
+          <p className="text-center text-sm tracking-wider text-muted">{sections.concept.concernsTitle}</p>
           <ul className="mt-7 space-y-4">
             {concerns.map((concern) => (
               <li key={concern} className="flex items-start gap-3.5 text-sm leading-7 sm:text-[0.95rem]">

@@ -1,13 +1,13 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { faqs } from '@/config/site';
+import { faqs, sections } from '@/config/site';
 
 export function Faq() {
   return (
     <section className="border-t border-line bg-sand py-20 sm:py-28">
       <Container>
         <Reveal>
-          <SectionHeading eyebrow="FAQ" title="よくあるご質問" />
+          <SectionHeading eyebrow={sections.faq.eyebrow} title={sections.faq.title} />
         </Reveal>
 
         <dl className="mx-auto mt-14 max-w-2xl divide-y divide-line border-t border-b border-line">

@@ -1,6 +1,6 @@
 import { Container, SectionHeading } from './primitives';
 import { Reveal } from './Reveal';
-import { flow } from '@/config/site';
+import { flow, sections } from '@/config/site';
 
 export function Flow() {
   return (
@@ -8,9 +8,9 @@ export function Flow() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Flow"
-            title="セッションの流れ"
-            lead="ゆったり90分。お茶を飲んで振り返る時間まで含めて、TONEKAのセッションです。"
+            eyebrow={sections.flow.eyebrow}
+            title={sections.flow.title}
+            lead={sections.flow.lead}
           />
         </Reveal>
 
