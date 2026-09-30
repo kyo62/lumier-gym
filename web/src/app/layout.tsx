@@ -31,7 +31,8 @@ export const metadata: Metadata = {
     url: site.url,
   },
   twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
+  // 公開前（NEXT_PUBLIC_NOINDEX=1）は、検索結果に出さない。仮の文言のまま検索に載るのを防ぐ
+  robots: process.env.NEXT_PUBLIC_NOINDEX === '1' ? { index: false, follow: false } : { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

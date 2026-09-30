@@ -6,6 +6,12 @@ export const dynamic = 'force-static';
 
 export default function robots(): MetadataRoute.Robots {
   const base = process.env.NEXT_PUBLIC_SITE_URL || site.url;
+
+  // 公開前（NEXT_PUBLIC_NOINDEX=1）は、サイト全体を検索の対象外にする
+  if (process.env.NEXT_PUBLIC_NOINDEX === '1') {
+    return { rules: { userAgent: '*', disallow: '/' } };
+  }
+
   return {
     rules: {
       userAgent: '*',

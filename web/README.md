@@ -86,7 +86,7 @@ npm run dev        # http://localhost:3000/member
      <p>ログイン用のコードです。会員ページの入力欄に入れてください。</p>
      <p style="font-size:24px;letter-spacing:6px"><b>{{ .Token }}</b></p>
      ```
-   - **メールの送信元（SMTP）を設定する。** Supabase 標準の送信は回数がとても少なく、会員が増えるとログインコードが届かなくなります（Resend などの無料枠が使えます）
+   - **メールの送信元（SMTP）を設定する（必須）。** Supabase 標準のメール送信は**1時間に2通程度**しか送れず、実質的にログインコードが届きません（[参考](https://zenn.dev/daimyo404/articles/3fefe4ef2d9500)）。Resend などを設定します。会員の方に送るには、**自分のドメインの認証が必要になるのが一般的**です（Resend の場合。公式で要確認）。ドメインの取得が先です
    - 画面の名称は、Supabase の更新で変わることがあります
 4. **自分（施術者）を管理者にする**
    - Authentication → Users → **Add user → Create new user**（自分のメールアドレス。**Auto Confirm User にチェック**）
@@ -195,11 +195,20 @@ grep -n "=== TODO" src/config/site.ts
 
 ### Cloudflare Pages（無料・商用利用可／推奨）
 
-```bash
-npm install --save-dev @opennextjs/cloudflare wrangler
-npx opennextjs-cloudflare build
-npx wrangler deploy
-```
+サイトは完全に静的なので、専用の変換ツールは要りません。ダッシュボードで GitHub を接続し、次のように設定します。
+**くわしい手順とリンクは [`../02_Engineer/会員ページ_公開までの手順.md`](../02_Engineer/会員ページ_公開までの手順.md)** にあります。
+
+| 項目 | 値 |
+|---|---|
+| Root directory | `web` |
+| Build command | `npm run build` |
+| Build output directory | `out` |
+| Node のバージョン | `web/.node-version` で 22 に固定済み |
+| 環境変数（公開前） | `NEXT_PUBLIC_NOINDEX` = `1`（検索結果に出さない。公開するときに外す） |
+| 環境変数（会員ページを本番にするとき） | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+
+環境変数は、**Production と Preview で別々に設定**されます（本番ブランチ以外のビルドは Preview 扱い）。
+また、`NEXT_PUBLIC_` の値は**ビルド時に埋め込まれる**ため、変更したら再デプロイが必要です。
 
 ### Vercel
 
