@@ -37,6 +37,9 @@ export function Footer() {
             <Link href="/#access" className="transition-colors hover:text-canvas">
               アクセス
             </Link>
+            <Link href="/member" className="transition-colors hover:text-canvas">
+              会員ページ
+            </Link>
             <Link href="/terms" className="transition-colors hover:text-canvas">
               利用規約
             </Link>

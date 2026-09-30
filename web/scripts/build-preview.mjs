@@ -87,6 +87,8 @@ const LINK_REWRITES = [
   [/href="\/#/g, 'href="index.html#'],
   [/href="\/terms"/g, 'href="terms.html"'],
   [/href="\/privacy"/g, 'href="privacy.html"'],
+  // 会員ページは、共有用のプレビューには含めない（ログインと保存が必要なため）
+  [/href="\/member"/g, 'href="#"'],
   [/href="\/icon\?[^"]*"/g, 'href="#"'],
   [/href="\/"/g, 'href="index.html"'],
 ];

@@ -10,8 +10,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      // 管理画面とキャンセルURLは検索結果に出さない
-      disallow: ['/admin', '/auth', '/cancel', '/api'],
+      // 会員ページは検索結果に出さない
+      disallow: ['/member'],
     },
     sitemap: `${base.replace(/\/$/, '')}/sitemap.xml`,
   };
