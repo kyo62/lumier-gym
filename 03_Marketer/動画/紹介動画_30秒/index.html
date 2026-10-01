@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>TONEKA 紹介動画</title>
+<link rel="stylesheet" href="node_modules/@fontsource/shippori-mincho/500.css">
+<link rel="stylesheet" href="node_modules/@fontsource/shippori-mincho/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-jp/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-jp/500.css">
+<style>
+  :root{
+    --canvas:#f6f3ee; --ink:#2e2b27; --muted:#6f6961; --line:#ddd5c8; --brass:#a8894f; --brass-soft:#ebe0cb;
+    --serif:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+    --sans:"Noto Sans JP","Hiragino Sans",sans-serif;
+  }
+  html,body{margin:0;background:var(--canvas)}
+  #stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--canvas);color:var(--ink);font-family:var(--sans)}
+  /* 全体に、ごくうすい紙の質感（真ん中を少し明るく） */
+  #stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%, #fffdfa 0%, rgba(255,253,250,0) 62%);pointer-events:none}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+         padding:0 96px;box-sizing:border-box;text-align:center;opacity:0}
+  .r{opacity:0;will-change:transform,opacity}
+  .serif{font-family:var(--serif);font-weight:500;letter-spacing:.08em}
+  .big{font-size:96px;line-height:1.55}
+  .mid{font-size:60px;line-height:1.7}
+  .small{font-family:var(--sans);font-size:38px;line-height:2.05;letter-spacing:.1em;color:var(--muted);font-weight:400}
+  .cap{font-family:var(--sans);font-size:24px;letter-spacing:.42em;color:var(--brass);text-transform:uppercase;font-weight:500}
+  .accent{color:var(--brass)}
+  .rule{height:2px;background:var(--brass);width:0}
+  svg{overflow:visible}
+  .row{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .rows{display:flex;flex-direction:column;gap:88px}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. がんばる前に、まず整える。 -->
+  <section class="scene" id="s1">
+    <svg id="vial1" width="620" height="620" viewBox="0 0 64 64" fill="none" stroke="#2e2b27" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:64px">
+      <rect x="8" y="25" width="48" height="16" rx="8"/>
+      <path d="M27 27 V39"/><path d="M37 27 V39"/>
+      <circle id="bub1" cx="32" cy="33" r="4" fill="#a8894f" stroke="none"/>
+    </svg>
+    <div class="r serif big" data-d="2.5">がんばる前に、</div>
+    <div class="r serif big" data-d="3.2">まず<span class="accent">整える</span>。</div>
+  </section>
+
+  <!-- 2. 激しい筋トレは、しません。 -->
+  <section class="scene" id="s2">
+    <div class="r serif big" data-d="0.4">激しい筋トレは、</div>
+    <div class="r serif big" data-d="1.1">しません。</div>
+    <div class="rule" id="rule2" style="margin:72px 0 56px"></div>
+    <div class="r small" data-d="2.4">呼吸と骨格のバランスを</div>
+    <div class="r small" data-d="2.9">整えることから、はじめます。</div>
+  </section>
+
+  <!-- 3. 完全個室・完全予約制・名城公園駅 -->
+  <section class="scene" id="s3">
+    <div class="rows">
+      <div class="row r" data-d="0.4"><div class="cap">Private room</div><div class="serif" style="font-size:84px">完全個室</div></div>
+      <div class="row r" data-d="1.3"><div class="cap">By appointment</div><div class="serif" style="font-size:84px">完全予約制</div></div>
+      <div class="row r" data-d="2.2"><div class="cap">Meijo-koen Station</div><div class="serif" style="font-size:84px">名城公園駅 徒歩すぐ</div></div>
+    </div>
+  </section>
+
+  <!-- 4. 施術と姿勢のエクササイズ：軸がそろう -->
+  <section class="scene" id="s4">
+    <svg id="axis" width="300" height="560" viewBox="0 0 300 560" style="margin-bottom:56px">
+      <line id="axisLine" x1="150" y1="20" x2="150" y2="540" stroke="#b9b0a2" stroke-width="3" stroke-dasharray="4 10" stroke-linecap="round"/>
+      <circle class="dot" cx="150" cy="70"  r="26" fill="#a8894f"/>
+      <circle class="dot" cx="150" cy="210" r="20" fill="#2e2b27"/>
+      <circle class="dot" cx="150" cy="350" r="20" fill="#2e2b27"/>
+      <circle class="dot" cx="150" cy="490" r="20" fill="#2e2b27"/>
+    </svg>
+    <div class="r serif mid" data-d="1.4">施術と、</div>
+    <div class="r serif mid" data-d="1.9">姿勢のエクササイズ。</div>
+    <div class="r small" data-d="2.9" style="margin-top:36px">ゆったり、90分。</div>
+  </section>
+
+  <!-- 5. お茶 -->
+  <section class="scene" id="s5">
+    <svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2e2b27" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:56px">
+      <path d="M18 30 H46 L43 48 Q32 53 21 48 Z"/>
+      <path d="M46 34 C55 34 55 44 44 44"/>
+      <path d="M14 56 Q32 60 50 56"/>
+      <path class="steam" d="M25 24 C21 20 29 17 25 12" stroke="#a8894f"/>
+      <path class="steam" d="M32 24 C28 20 36 17 32 12" stroke="#a8894f"/>
+      <path class="steam" d="M39 24 C35 20 43 17 39 12" stroke="#a8894f"/>
+    </svg>
+    <div class="r serif mid" data-d="1.0">セッションのあとは、</div>
+    <div class="r serif mid" data-d="1.5">お茶をどうぞ。</div>
+  </section>
+
+  <!-- 6. エンドカード -->
+  <section class="scene" id="s6">
+    <svg id="vial6" width="220" height="220" viewBox="0 0 64 64" fill="none" stroke="#2e2b27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:48px">
+      <rect x="8" y="25" width="48" height="16" rx="8"/>
+      <path d="M27 27 V39"/><path d="M37 27 V39"/>
+      <circle cx="32" cy="33" r="4" fill="#a8894f" stroke="none"/>
+    </svg>
+    <div class="r serif" data-d="0.5" style="font-size:132px;letter-spacing:.3em;margin-right:-.3em;line-height:1.2">TONEKA</div>
+    <div class="r small" data-d="1.1" style="margin-top:18px;letter-spacing:.24em;font-size:32px">パーソナルコンディショニングサロン</div>
+    <div class="rule" id="rule6" style="margin:64px 0 52px"></div>
+    <div class="r small" data-d="2.1" style="color:var(--ink)">名古屋・名城公園駅 徒歩すぐ</div>
+    <div class="r small" data-d="2.6" style="color:var(--brass);font-weight:500">2027年1月 グランドオープン</div>
+  </section>
+
+</div>
+
+<script>
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+
+const SCENES=[
+  {id:'s1',a:0,   b:5.0,  fadeIn:.35},
+  {id:'s2',a:5.0, b:10.0},
+  {id:'s3',a:10.0,b:15.4},
+  {id:'s4',a:15.4,b:21.2},
+  {id:'s5',a:21.2,b:25.8},
+  {id:'s6',a:25.8,b:31.0, hold:true},
+];
+SCENES.forEach(s=>{s.el=document.getElementById(s.id);s.items=[...s.el.querySelectorAll('.r')];});
+const $=id=>document.getElementById(id);
+const dots=[...document.querySelectorAll('#axis .dot')];
+const dotStart=[70,-56,44,-34];          // 最初のずれ（横）
+const steams=[...document.querySelectorAll('.steam')];
+steams.forEach(p=>{const L=p.getTotalLength();p.style.strokeDasharray=L;p.dataset.len=L;});
+
+function render(t){
+  for(const s of SCENES){
+    const lt=t-s.a;
+    const fi=clamp(lt/(s.fadeIn||.5));
+    const fo=s.hold?1:clamp((s.b-t)/.5);
+    const op=Math.min(fi,fo);
+    s.el.style.opacity=op;
+    s.el.style.visibility=op>0?'visible':'hidden';
+    for(const el of s.items){
+      const d=parseFloat(el.dataset.d);
+      const p=easeOut(clamp((lt-d)/.9));
+      el.style.opacity=p;
+      el.style.transform=`translateY(${(1-p)*30}px)`;
+    }
+  }
+  // 1: 気泡が、ゆれながら中央に収まる
+  { const lt=t-0.2, tau=clamp(lt-0.2,0,4);
+    const x=32-17*Math.exp(-1.7*tau)*Math.cos(5.2*tau);
+    $('bub1').setAttribute('cx',x.toFixed(2)); }
+  // 2: 線がのびる
+  { const lt=t-SCENES[1].a; $('rule2').style.width=(easeInOut(clamp((lt-1.8)/.8))*220)+'px'; }
+  // 4: 軸に、点がそろう
+  { const lt=t-SCENES[3].a; const p=easeInOut(clamp((lt-.5)/1.6));
+    dots.forEach((d,i)=>d.setAttribute('cx',(150+dotStart[i]*(1-p)).toFixed(2)));
+    $('axisLine').style.opacity=.25+.75*p; }
+  // 5: 湯気が立ちのぼる（ずらして、くり返す）
+  { const lt=t-SCENES[4].a;
+    steams.forEach((p,i)=>{ const L=+p.dataset.len; const ph=((lt*.55)-i*.22);
+      const c=ph-Math.floor(ph);               // 0..1
+      const draw=clamp(c/.5), fade=clamp((1-c)/.5);
+      p.style.strokeDashoffset=L*(1-draw);
+      p.style.opacity=lt<.4?0:fade;
+    }); }
+  // 6: 線がのびる
+  { const lt=t-SCENES[5].a; $('rule6').style.width=(easeInOut(clamp((lt-1.6)/.8))*220)+'px'; }
+}
+window.render=render;
+render(0);
+</script>
+</body>
+</html>
