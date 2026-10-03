@@ -62,6 +62,7 @@ export function Price() {
             title={sections.price.title}
             lead={sections.price.lead}
           />
+          <p className="mx-auto mt-6 max-w-2xl text-center text-[11px] leading-6 text-muted">{sections.price.slotNotice}</p>
         </Reveal>
 
         {/* 月額プラン */}
