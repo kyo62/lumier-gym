@@ -21,7 +21,7 @@ export function LocalBusinessJsonLd() {
       addressLocality: site.address.city,
       postalCode: site.address.postalCode,
     },
-    openingHours: businessHours.hours,
+    openingHours: businessHours.openingHours,
     priceRange: `¥${Math.min(...allPlans.map((p) => p.price)).toLocaleString()}〜¥${Math.max(
       ...allPlans.map((p) => p.price)
     ).toLocaleString()}`,

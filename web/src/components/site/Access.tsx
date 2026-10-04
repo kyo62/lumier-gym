@@ -39,11 +39,16 @@ export function Access() {
               <div className="grid grid-cols-[5.5rem_1fr] gap-4 py-5">
                 <dt className="text-xs tracking-widest text-muted">営業日</dt>
                 <dd className="leading-7">
-                  {businessHours.days}
-                  <br />
-                  <span className="text-xs text-muted tnum">{businessHours.hours}</span>
-                  <br />
-                  <span className="text-[11px] leading-6 text-muted">{businessHours.note}</span>
+                  <ul className="space-y-2">
+                    {businessHours.schedule.map((row) => (
+                      <li key={row.days}>
+                        {row.days}
+                        <span className="ml-3 text-xs text-muted tnum">{row.hours}</span>
+                        {'note' in row ? <span className="block text-[11px] leading-6 text-muted">{row.note}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="mt-3 block text-[11px] leading-6 text-muted">{businessHours.note}</span>
                 </dd>
               </div>
             </dl>
