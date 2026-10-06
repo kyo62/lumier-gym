@@ -41,7 +41,7 @@ export const site = {
 
   sns: {
     instagram: '',
-    line: '',
+    line: 'https://lin.ee/SzuoyPd',
   },
 } as const;
 
