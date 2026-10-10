@@ -9,7 +9,7 @@
 :root{--bg:#f6f3ee;--ink:#2e2b27;--muted:#6f6961;--line:#d9d0c1;--brass:#a8894f;--sans:"Jost","Zen Kaku Gothic New",sans-serif;--jp:"Zen Kaku Gothic New","Hiragino Sans",sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{width:1080px;height:1350px;background:var(--bg);color:var(--ink);font-family:var(--jp);padding:44px 88px 38px;display:flex;flex-direction:column}
+body{width:1080px;height:1350px;background:var(--bg);color:var(--ink);font-family:var(--jp);padding:36px 88px 30px;display:flex;flex-direction:column}
 .head{display:flex;align-items:center;justify-content:space-between}
 .lock{display:inline-flex;align-items:center;gap:22px}
 .lock svg{width:108px;height:auto}
@@ -18,12 +18,12 @@ body{width:1080px;height:1350px;background:var(--bg);color:var(--ink);font-famil
 .eyebrow{font-family:var(--sans);font-size:22px;letter-spacing:.35em;color:var(--brass);font-weight:500}
 h1{font-family:var(--sans);font-weight:400;font-size:46px;letter-spacing:.14em;margin:20px 0 2px}
 .sub{font-size:23px;color:var(--muted);letter-spacing:.06em}
-.group{margin-top:12px}
+.group{margin-top:10px}
 .glabel{font-size:19px;letter-spacing:.22em;color:var(--brass);font-weight:700;padding-bottom:10px;border-bottom:2px solid var(--ink)}
-.item{display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding:6px 0;border-bottom:1px solid var(--line)}
-.item .n{font-size:27px;font-weight:700;letter-spacing:.04em}
-.item .d{font-size:17px;color:var(--muted);margin-top:3px;letter-spacing:.03em}
-.price{font-family:var(--sans);font-weight:500;font-size:38px;letter-spacing:.02em;white-space:nowrap;text-align:right}
+.item{display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding:4px 0;border-bottom:1px solid var(--line)}
+.item .n{font-size:26px;font-weight:700;letter-spacing:.04em}
+.item .d{font-size:16px;color:var(--muted);margin-top:3px;letter-spacing:.03em}
+.price{font-family:var(--sans);font-weight:500;font-size:36px;letter-spacing:.02em;white-space:nowrap;text-align:right}
 .price small{font-family:var(--jp);font-size:22px;margin-left:6px;color:var(--muted);font-weight:400}
 .price .per{display:block;font-family:var(--jp);font-size:16px;color:var(--muted);margin-top:0;font-weight:400}
 .bottom{margin-top:auto;border-top:2px solid var(--ink);padding-top:20px;display:flex;gap:36px;align-items:flex-end}.note{flex:1;font-size:17px;line-height:1.75;color:var(--muted)}.qrbox{width:122px;text-align:center;flex:none}.qr{width:122px;height:122px;display:block;background:#fff;padding:8px;border:1px solid var(--line)}.qrcap{font-size:15px;letter-spacing:.06em;margin-top:6px;color:var(--ink);font-weight:500}
@@ -44,20 +44,21 @@ h1{font-family:var(--sans);font-weight:400;font-size:46px;letter-spacing:.14em;m
   <div class="glabel">継続してお通いいただく方へ</div>
   <div class="item"><div><div class="n">月4回</div><div class="d">週1回のペース。姿勢の記録と経過の確認つき</div></div><div class="price">30,800<small>円／月</small><span class="per">1回あたり 7,700円</span></div></div>
   <div class="item"><div><div class="n">月2回</div><div class="d">隔週のペース。整った状態を保つプラン</div></div><div class="price">16,000<small>円／月</small><span class="per">1回あたり 8,000円</span></div></div>
-  <div class="item"><div><div class="n">回数券（モニター価格）</div><div class="d">4回分　購入日から2か月有効　お支払いは当日、店頭で現金</div></div><div class="price">9,600<small>円</small><span class="per">1回あたり 2,400円</span></div></div>
+  <div class="item"><div><div class="n">回数券　4回</div><div class="d">購入日から2か月有効　お支払いは当日、店頭で</div></div><div class="price">36,000<small>円</small><span class="per">1回あたり 9,000円</span></div></div>
 </div>
 
 <div class="group">
   <div class="glabel">単発でのご利用</div>
   <div class="item"><div><div class="n">初回体験</div><div class="d">はじめての方へ　60分</div></div><div class="price">3,300<small>円</small></div></div>
   <div class="item"><div><div class="n">都度ビジター</div><div class="d">店舗　60分</div></div><div class="price">12,000<small>円</small></div></div>
-  <div class="item"><div><div class="n">オンライン</div><div class="d">ご自宅から　50分</div></div><div class="price">12,000<small>円</small></div></div>
+  <div class="item"><div><div class="n">オンライン</div><div class="d">ご自宅から　50分</div></div><div class="price">10,000<small>円</small></div></div>
 </div>
 
 <div class="group">
   <div class="glabel">ペア・ご家族で</div>
-  <div class="item"><div><div class="n">ペア同時受講</div><div class="d">1枠をシェア　60分　2名で15,400円</div></div><div class="price">7,700<small>円／人</small></div></div>
-  <div class="item"><div><div class="n">家族割</div><div class="d">ご家族それぞれが、個別の枠で通う場合</div></div><div class="price">各月額から<small style="font-size:34px;color:#2e2b27;margin-left:0">5%OFF</small></div></div>
+  <div class="item"><div><div class="n">ペア同時受講</div><div class="d">1枠をシェア　60分　2名で13,200円</div></div><div class="price">6,600<small>円／人</small></div></div>
+  <div class="item"><div><div class="n">ペア月額　月4回</div><div class="d">ペアでご入会の方（月4回のみ）</div></div><div class="price">26,400<small>円／人・月</small><span class="per">1回あたり 6,600円</span></div></div>
+  <div class="item"><div><div class="n">家族割</div><div class="d">ご家族で月額プランにご入会の方。回数はご家族でシェアできます</div></div><div class="price"><span style="font-family:var(--jp);font-size:19px;color:#6f6961;font-weight:400">各月額から</span> 5%OFF</div></div>
 </div>
 
 <div class="bottom"><div class="note">
