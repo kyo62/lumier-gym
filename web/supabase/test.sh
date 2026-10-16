@@ -31,4 +31,6 @@ chmod -R a+rX "$HERE"
 
 $RUN_AS "${PSQL[@]}" -f "$HERE/tests/00_supabase_stub.sql"
 $RUN_AS "${PSQL[@]}" -f "$HERE/migrations/001_member_area.sql"
+$RUN_AS "${PSQL[@]}" -f "$HERE/migrations/002_karte.sql"
 $RUN_AS "${PSQL[@]}" -f "$HERE/tests/rls_test.sql" 2>&1 | sed -E 's/^psql:[^ ]+ (NOTICE|ERROR): +//'
+$RUN_AS "${PSQL[@]}" -f "$HERE/tests/karte_test.sql" 2>&1 | sed -E 's/^psql:[^ ]+ (NOTICE|ERROR): +//'
