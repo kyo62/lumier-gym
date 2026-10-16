@@ -94,6 +94,9 @@ export type MyStatus = {
   hobby: string;
   /** 最初の問診票に、お客様ご自身が書いた体の状態 */
   intakeBody: string;
+  /** ストレッチ回数券の残りと期限（期限切れなら 0） */
+  stretchRemain: number;
+  stretchExpire: string | null;
 };
 /** お客様に見せるセッションの記録 */
 export type MySession = {
@@ -101,6 +104,70 @@ export type MySession = {
   type: string;
   menu: string;
   homecare: string;
+};
+
+/** 施術者の画面：カルテ（内部の項目を含む） */
+export type AdminClient = {
+  id: string;
+  code: string;
+  /** ひもづけた会員ログイン。null ならまだ */
+  userId: string | null;
+  name: string;
+  kana: string;
+  gender: string;
+  phone: string;
+  email: string;
+  referrer: string;
+  hobby: string;
+  plan: string;
+  ticketCount: number | null;
+  ticketDate: string | null;
+  remain: number;
+  carry: number;
+  carryExpire: string | null;
+  stretchRemain: number;
+  stretchExpire: string | null;
+  targetLabel: string;
+  targetDate: string | null;
+  consentOn: string | null;
+  purpose: string;
+  goal: string;
+  intakeBody: string;
+  /** 見立て（内部のみ。会員には見えない） */
+  posture: string;
+  /** ホームケア（会員に見える） */
+  homework: string;
+  internalNote: string;
+};
+export type AdminClientInput = Omit<AdminClient, 'id' | 'code' | 'userId'> & { id?: string };
+
+export type AdminSession = {
+  id: string;
+  clientId: string;
+  sessionDate: string;
+  type: string;
+  status: string;
+  consumed: number;
+  consumedFrom: 'remain' | 'carry' | 'stretch' | null;
+  fee: number;
+  amount: number;
+  /** 状態メモ（内部のみ） */
+  condition: string;
+  menu: string;
+  homecare: string;
+  /** false なら会員には出ない */
+  share: boolean;
+  note: string;
+};
+export type SessionRecordInput = {
+  sessionDate: string;
+  choice: string;
+  menu: string;
+  homecare: string;
+  condition: string;
+  share: boolean;
+  /** キャンセル料・無断キャンセルを免除する */
+  waive: boolean;
 };
 
 export type VideoProvider = 'youtube' | 'vimeo' | 'url';
@@ -189,6 +256,20 @@ export interface MemberApi {
   /** 会員の自主トレを新しい順に（コメントつき） */
   adminListActivities(): Promise<AdminActivity[]>;
   adminAddComment(logId: string, body: string): Promise<void>;
+
+  /* --- カルテ（施術者だけ） --- */
+  adminListClients(): Promise<AdminClient[]>;
+  adminSaveClient(input: AdminClientInput): Promise<AdminClient>;
+  adminDeleteClient(id: string): Promise<void>;
+  adminListSessions(clientId: string): Promise<AdminSession[]>;
+  /** セッションを記録し、回数・繰越・キャンセル料を自動で計算する。結果のひとことを返す */
+  adminRecordSession(clientId: string, input: SessionRecordInput): Promise<string>;
+  /** セッションの記録を消し、使った回数を元に戻す */
+  adminDeleteSession(sessionId: string): Promise<void>;
+  /** 月次の締め（月初に1回）。なくなった回数を返す */
+  adminRollMonth(clientId: string): Promise<number>;
+  /** カルテと会員ログイン（メールアドレス）をひもづける */
+  adminLinkClient(clientId: string, email: string): Promise<void>;
 }
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {

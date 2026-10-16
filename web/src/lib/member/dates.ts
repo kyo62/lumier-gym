@@ -57,3 +57,19 @@ function ymd(value: string): [number, number, number] {
   const [y, m, d] = value.split('-').map(Number);
   return [y, m - 1, d];
 }
+
+/** n か月後の同じ日（月末をはみ出さない）。2026-01-31 + 1か月 = 2026-02-28 */
+export function addMonthsString(value: string, n: number): string {
+  const d = parseDateString(value);
+  const day = d.getDate();
+  const target = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(day, last));
+  return toDateString(target);
+}
+
+/** その月の末日 */
+export function endOfMonthString(value: string): string {
+  const d = parseDateString(value);
+  return toDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+}

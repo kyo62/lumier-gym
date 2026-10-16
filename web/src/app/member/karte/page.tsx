@@ -26,6 +26,7 @@ export default function KartePage() {
     { label: '今月の残り', value: `${s.remain}回` },
     ...(s.carry > 0 ? [{ label: '繰越', value: `${s.carry}回`, sub: s.carryExpire ? `${formatDateJa(s.carryExpire)}まで` : undefined }] : []),
     ...(s.ticketExpire ? [{ label: '回数券の期限', value: formatDateJa(s.ticketExpire) }] : []),
+    ...(s.stretchRemain > 0 ? [{ label: 'ストレッチ回数券', value: `${s.stretchRemain}回`, sub: s.stretchExpire ? `${formatDateJa(s.stretchExpire)}まで` : undefined }] : []),
   ];
 
   return (

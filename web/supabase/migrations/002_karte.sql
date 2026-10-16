@@ -30,7 +30,7 @@ create table public.clients (
   referrer      text check (char_length(referrer) <= 100),           -- 内部のみ
   hobby         text check (char_length(hobby) <= 300),
   plan          text not null default 'trial'
-                check (plan in ('m4', 'm2', 'pair4', 'fam6', 'fam8', 'ticket', 'sticket', 'visitor', 'online', 'trial')),
+                check (plan in ('m4', 'm2', 'pair4', 'fam6', 'fam8', 'ticket', 'visitor', 'online', 'trial')),
   ticket_count  integer check (ticket_count between 0 and 20),
   ticket_date   date,
   share_group   text check (char_length(share_group) <= 100),       -- 家族・ペアの相手（内部メモ）
@@ -38,6 +38,8 @@ create table public.clients (
   remain        integer not null default 0 check (remain between 0 and 99),
   carry         integer not null default 0 check (carry between 0 and 99),
   carry_expire  date,
+  stretch_remain integer not null default 0 check (stretch_remain between 0 and 99),  -- ストレッチ回数券の残り（ほかのプランと併用できる）
+  stretch_expire date,                                                                  -- その期限
   target_label  text check (char_length(target_label) <= 100),
   target_date   date,
   consent_on    date,
@@ -62,10 +64,11 @@ create table public.sessions (
   status        text not null default 'attended'
                 check (status in ('attended', 'cancel_same_day', 'cancel_advance', 'noshow')),
   consumed      integer not null default 0 check (consumed between 0 and 5),
-  consumed_from text check (consumed_from in ('remain', 'carry')),
+  consumed_from text check (consumed_from in ('remain', 'carry', 'stretch')),
   fee           integer not null default 0 check (fee between 0 and 100000),
   amount        integer not null default 0 check (amount between 0 and 1000000),
   condition     text check (char_length(condition) <= 2000),          -- 状態メモ（内部のみ）
+  note          text check (char_length(note) <= 300),                -- 回数・料金の自動メモ（内部のみ）
   menu          text check (char_length(menu) <= 2000),               -- 今日のメニュー（会員に見せる）
   homecare      text check (char_length(homecare) <= 2000),           -- ホームケア（会員に見せる）
   share         boolean not null default true,                        -- false にすると会員には出ない
@@ -92,7 +95,7 @@ create policy sessions_admin_all on public.sessions
 create function public.my_status()
 returns table (
   name text, plan text, remain integer, carry integer, carry_expire date,
-  ticket_expire date, target_label text, target_date date, homework text, radar jsonb,
+  ticket_expire date, stretch_remain integer, stretch_expire date, target_label text, target_date date, homework text, radar jsonb,
   purpose text, goal text, hobby text, intake_body text
 )
 language sql
@@ -104,6 +107,8 @@ as $$
          case when c.carry_expire is not null and c.carry_expire < current_date then 0 else c.carry end,
          c.carry_expire,
          case when c.ticket_date is not null then (c.ticket_date + interval '2 months')::date end,
+         case when c.stretch_expire is not null and c.stretch_expire < current_date then 0 else c.stretch_remain end,
+         c.stretch_expire,
          c.target_label, c.target_date, c.homework, c.radar,
          c.purpose, c.goal, c.hobby, c.intake_body
   from public.clients c

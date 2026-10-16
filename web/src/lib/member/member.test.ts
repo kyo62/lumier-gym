@@ -6,6 +6,8 @@ import { parseVideoInput, embedUrl, directVideoUrl } from './video.ts';
 import { parseBodyForm, parseMealForm, parseWorkoutForm, parseActivityForm, parseComment, normalizeCode, isPlausibleEmail } from './inputs.ts';
 import { bodySeries, latestChange, yRange, groupByDate } from './stats.ts';
 import type { BodyLog } from './types.ts';
+import { applySession, revertSession, rollMonth, carryValid, ticketExpire, type Counters } from './karteRules.ts';
+import { addMonthsString, endOfMonthString } from './dates.ts';
 
 /* -------------------------------------------------------------------------- */
 describe('dates', () => {
@@ -166,6 +168,84 @@ describe('inputs', () => {
     assert.equal(isPlausibleEmail('a@b.co'), true);
     assert.equal(isPlausibleEmail('a@b'), false);
     assert.equal(isPlausibleEmail('a b@c.jp'), false);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+describe('karteRules（回数・繰越・キャンセル）', () => {
+  const T = '2026-11-10';
+  const base = (o: Partial<Counters> = {}): Counters => ({ plan: 'm4', remain: 4, carry: 0, carryExpire: null, stretchRemain: 0, stretchExpire: null, ...o });
+
+  test('日付：月末をはみ出さない／月末日', () => {
+    assert.equal(addMonthsString('2026-01-31', 1), '2026-02-28');
+    assert.equal(addMonthsString('2026-12-15', 2), '2027-02-15');
+    assert.equal(endOfMonthString('2026-02-10'), '2026-02-28');
+    assert.equal(ticketExpire('2026-10-20'), '2026-12-20');
+  });
+
+  test('会員の通常セッション：繰越から先に使う。期限切れの繰越は使わない', () => {
+    const a = applySession(base({ carry: 1, carryExpire: '2026-11-30' }), 'regular', T);
+    assert.deepEqual([a.consumed, a.consumedFrom, a.counters.carry, a.counters.remain], [1, 'carry', 0, 4]);
+    const b = applySession(base({ carry: 1, carryExpire: '2026-11-01' }), 'regular', T);
+    assert.deepEqual([b.consumedFrom, b.counters.carry, b.counters.remain], ['remain', 1, 3]);
+    assert.equal(carryValid({ carry: 1, carryExpire: '2026-11-01' }, T), 0);
+  });
+
+  test('残りがなければ、回数は減らさずに記録だけ', () => {
+    const r = applySession(base({ remain: 0 }), 'regular', T);
+    assert.equal(r.consumed, 0);
+    assert.match(r.note, /残り枠がありません/);
+  });
+
+  test('単発：体験3,300／ビジター12,000／オンライン10,000', () => {
+    assert.equal(applySession(base({ plan: 'trial' }), 'trial', T).amount, 3300);
+    assert.equal(applySession(base({ plan: 'visitor' }), 'visitor', T).amount, 12000);
+    assert.equal(applySession(base({ plan: 'online' }), 'online', T).amount, 10000);
+    assert.equal(applySession(base({ plan: 'visitor' }), 'regular', T).amount, 12000);
+  });
+
+  test('キャンセル：前日までは無料／当日は 体験3,300・ビジター6,000・会員1,000／免除', () => {
+    assert.equal(applySession(base(), 'cancel_free', T).fee, 0);
+    assert.equal(applySession(base(), 'cancel_same', T).fee, 1000);
+    assert.equal(applySession(base({ plan: 'trial' }), 'cancel_same', T).fee, 3300);
+    assert.equal(applySession(base({ plan: 'visitor' }), 'cancel_same', T).fee, 6000);
+    assert.equal(applySession(base(), 'cancel_same', T, true).fee, 0);
+    assert.equal(applySession(base({ plan: 'online' }), 'cancel_same', T).fee, 0, 'オンライン単発は未決のため、額を出さない');
+  });
+
+  test('無断キャンセル：会員は1回消化／単発は当日と同じ料金／免除できる', () => {
+    const m = applySession(base(), 'noshow', T);
+    assert.deepEqual([m.consumed, m.counters.remain, m.fee], [1, 3, 0]);
+    assert.equal(applySession(base({ plan: 'visitor' }), 'noshow', T).fee, 6000);
+    assert.equal(applySession(base(), 'noshow', T, true).consumed, 0);
+  });
+
+  test('ストレッチ回数券：ほかのプランと別に数える。期限切れ・残りなしは減らさない', () => {
+    const ok = applySession(base({ stretchRemain: 4, stretchExpire: '2026-12-31' }), 'stretch', T);
+    assert.deepEqual([ok.consumedFrom, ok.counters.stretchRemain, ok.counters.remain], ['stretch', 3, 4]);
+    assert.equal(applySession(base({ stretchRemain: 4, stretchExpire: '2026-11-01' }), 'stretch', T).consumed, 0);
+    assert.equal(applySession(base(), 'stretch', T).consumed, 0);
+  });
+
+  test('記録を消すと、使った回数が元に戻る', () => {
+    const used = applySession(base({ carry: 1, carryExpire: '2026-11-30' }), 'regular', T);
+    const back = revertSession(used.counters, used);
+    assert.deepEqual([back.carry, back.remain], [1, 4]);
+    const st = applySession(base({ stretchRemain: 2, stretchExpire: '2026-12-31' }), 'stretch', T);
+    assert.equal(revertSession(st.counters, st).stretchRemain, 2);
+    assert.deepEqual(revertSession(base(), { consumed: 0, consumedFrom: null }), base());
+  });
+
+  test('月次の締め：残りは翌月末までの繰越。これまでの繰越はなくなる。家族割は繰越なし', () => {
+    const r = rollMonth(base({ remain: 2, carry: 1, carryExpire: '2026-11-30' }), T);
+    assert.ok(r);
+    assert.deepEqual([r.counters.carry, r.counters.carryExpire, r.counters.remain, r.lost], [2, '2026-12-31', 4, 1]);
+    const fam = rollMonth(base({ plan: 'fam6', remain: 2 }), T);
+    assert.ok(fam);
+    assert.deepEqual([fam.counters.carry, fam.counters.carryExpire, fam.counters.remain], [0, null, 6]);
+    assert.equal(rollMonth(base({ plan: 'ticket' }), T), null, '月額プラン以外は対象外');
+    const none = rollMonth(base({ remain: 0 }), T);
+    assert.ok(none && none.counters.carry === 0 && none.counters.carryExpire === null);
   });
 });
 
@@ -411,6 +491,52 @@ describe('demoApi（本番のアクセス制御と同じ振る舞い）', async 
     await api.addActivity({ loggedOn: today, kind: 'run', minutes: 20, note: '' });
     await api.deleteAllMyLogs();
     assert.equal((await api.listActivities()).length, 0);
+  });
+
+  test('カルテ：施術者が入力→会員に見せる項目だけが、ひもづけた会員に見える', async () => {
+    await login('carol@example.com'); // 会員（admin で始まらない）
+    await assert.rejects(() => api.adminListClients(), '会員はカルテ一覧を開けない');
+    await assert.rejects(() => api.adminRecordSession('demo-client-1', { sessionDate: today, choice: 'regular', menu: '', homecare: '', condition: '', share: true, waive: false }));
+    await api.signOut();
+
+    await login('admin@example.com');
+    const clients = await api.adminListClients();
+    assert.ok(clients.length >= 2);
+    const created = await api.adminSaveClient({
+      name: '新規 太郎', kana: '', gender: '男性', phone: '', email: '', referrer: '紹介者A', hobby: '', plan: 'm4',
+      ticketCount: null, ticketDate: null, remain: 4, carry: 0, carryExpire: null, stretchRemain: 0, stretchExpire: null,
+      targetLabel: '', targetDate: null, consentOn: today, purpose: '肩の張り', goal: '', intakeBody: '', posture: '秘密の見立て',
+      homework: '呼吸を朝晩', internalNote: '内部メモ',
+    });
+    assert.match(created.code, /^TNK-\d{4}$/);
+    const msg = await api.adminRecordSession(created.id, { sessionDate: today, choice: 'regular', menu: 'ストレッチ', homecare: '呼吸', condition: '内部', share: true, waive: false });
+    assert.match(msg, /回数を1つ使いました/);
+    assert.equal((await api.adminListClients()).find((c) => c.id === created.id)?.remain, 3);
+    const [sess] = await api.adminListSessions(created.id);
+    await api.adminDeleteSession(sess.id);
+    assert.equal((await api.adminListClients()).find((c) => c.id === created.id)?.remain, 4, '記録を消すと回数が戻る');
+    await api.adminRecordSession(created.id, { sessionDate: today, choice: 'regular', menu: '2回目', homecare: '', condition: '', share: false, waive: false });
+    await api.adminRecordSession(created.id, { sessionDate: today, choice: 'regular', menu: '3回目（共有）', homecare: '', condition: '', share: true, waive: false });
+    await assert.rejects(() => api.adminLinkClient(created.id, 'nobody@example.com'));
+    await api.signOut();
+
+    await login('dave@example.com');
+    await api.signOut();
+    await login('admin@example.com');
+    // デモでは、新しい会員にサンプルのカルテが自動でひもづくので、先に外してからひもづけ直す
+    const sample = (await api.adminListClients()).find((c) => c.email === 'dave@example.com');
+    assert.ok(sample);
+    await assert.rejects(() => api.adminLinkClient(created.id, 'dave@example.com'), '1人の会員を2つのカルテにひもづけない');
+    await api.adminDeleteClient(sample.id);
+    await api.adminLinkClient(created.id, 'dave@example.com');
+    await api.signOut();
+
+    await login('dave@example.com');
+    const mine = await api.getMyStatus();
+    assert.ok(mine && mine.name === '新規 太郎' && mine.homework === '呼吸を朝晩' && mine.remain === 2);
+    assert.ok(!JSON.stringify(mine).includes('秘密の見立て') && !JSON.stringify(mine).includes('内部メモ') && !JSON.stringify(mine).includes('紹介者A'));
+    const sessions = await api.listMySessions();
+    assert.deepEqual(sessions.map((x) => x.menu), ['3回目（共有）'], '共有をオフにした記録と、内部の状態メモは見えない');
   });
 });
 

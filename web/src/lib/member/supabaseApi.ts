@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActivityComment, ActivityInput, ActivityKind, ActivityLog, AdminActivity, BodyInput, BodyLog,
+  ActivityComment, ActivityInput, ActivityKind, ActivityLog, AdminActivity, AdminClient, AdminClientInput, AdminSession, SessionRecordInput, BodyInput, BodyLog,
   MealInput, MealLog, MealType, MemberApi, MemberLogs, MemberSummary, Me, MySession, MyStatus,
   Video, VideoInput, VideoProvider, VideoVisibility, WorkoutInput, WorkoutLog,
 } from './types.ts';
+import { closeMonth, recordSession, removeSession, type KarteStore } from './karteService.ts';
+import { todayLocal } from './dates.ts';
 
 /**
  * 本番用のデータ層（Supabase）。
@@ -103,6 +105,35 @@ const toStatus = (r: Row): MyStatus => ({
   carryExpire: dateOrNull(r.carry_expire), ticketExpire: dateOrNull(r.ticket_expire),
   targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), homework: str(r.homework),
   purpose: str(r.purpose), goal: str(r.goal), hobby: str(r.hobby), intakeBody: str(r.intake_body),
+  stretchRemain: Number(r.stretch_remain ?? 0), stretchExpire: dateOrNull(r.stretch_expire),
+});
+const toClient = (r: Row): AdminClient => ({
+  id: str(r.id), code: str(r.code), userId: typeof r.user_id === 'string' ? r.user_id : null,
+  name: str(r.name), kana: str(r.kana), gender: str(r.gender), phone: str(r.phone), email: str(r.email),
+  referrer: str(r.referrer), hobby: str(r.hobby), plan: str(r.plan),
+  ticketCount: num(r.ticket_count), ticketDate: dateOrNull(r.ticket_date),
+  remain: Number(r.remain ?? 0), carry: Number(r.carry ?? 0), carryExpire: dateOrNull(r.carry_expire),
+  stretchRemain: Number(r.stretch_remain ?? 0), stretchExpire: dateOrNull(r.stretch_expire),
+  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), consentOn: dateOrNull(r.consent_on),
+  purpose: str(r.purpose), goal: str(r.goal), intakeBody: str(r.intake_body),
+  posture: str(r.posture), homework: str(r.homework), internalNote: str(r.internal_note),
+});
+const clientRow = (i: AdminClientInput) => ({
+  name: i.name, kana: orNull(i.kana), gender: orNull(i.gender), phone: orNull(i.phone), email: orNull(i.email),
+  referrer: orNull(i.referrer), hobby: orNull(i.hobby), plan: i.plan,
+  ticket_count: i.ticketCount, ticket_date: i.ticketDate,
+  remain: i.remain, carry: i.carry, carry_expire: i.carryExpire,
+  stretch_remain: i.stretchRemain, stretch_expire: i.stretchExpire,
+  target_label: orNull(i.targetLabel), target_date: i.targetDate, consent_on: i.consentOn,
+  purpose: orNull(i.purpose), goal: orNull(i.goal), intake_body: orNull(i.intakeBody),
+  posture: orNull(i.posture), homework: orNull(i.homework), internal_note: orNull(i.internalNote),
+});
+const toAdminSession = (r: Row): AdminSession => ({
+  id: str(r.id), clientId: str(r.client_id), sessionDate: str(r.session_date), type: str(r.type), status: str(r.status),
+  consumed: Number(r.consumed ?? 0),
+  consumedFrom: r.consumed_from === 'remain' || r.consumed_from === 'carry' || r.consumed_from === 'stretch' ? r.consumed_from : null,
+  fee: Number(r.fee ?? 0), amount: Number(r.amount ?? 0), condition: str(r.condition), menu: str(r.menu),
+  homecare: str(r.homecare), share: r.share !== false, note: str(r.note),
 });
 const toMySession = (r: Row): MySession => ({
   sessionDate: str(r.session_date), type: str(r.type), menu: str(r.menu), homecare: str(r.homecare),
@@ -124,6 +155,40 @@ async function listLogs<T>(table: string, map: (r: Row) => T, userId?: string): 
   const rows = unwrap(await q.order('logged_on', NEWEST_FIRST).order('created_at', NEWEST_FIRST).limit(LIMIT));
   return (rows as Row[]).map(map);
 }
+
+/** セッション記録の保存先（Supabase）。計算は karteService.ts */
+const supabaseKarteStore: KarteStore = {
+  async getClient(id) {
+    const sb = await getClient();
+    const row = unwrap(await sb.from('clients').select('*').eq('id', id).maybeSingle()) as Row | null;
+    if (!row) throw new Error('カルテが見つかりません。');
+    return toClient(row);
+  },
+  async saveCounters(id, k) {
+    const sb = await getClient();
+    check(await sb.from('clients').update({
+      remain: k.remain, carry: k.carry, carry_expire: k.carryExpire,
+      stretch_remain: k.stretchRemain, stretch_expire: k.stretchExpire,
+    }).eq('id', id));
+  },
+  async insertSession(r) {
+    const sb = await getClient();
+    check(await sb.from('sessions').insert({
+      client_id: r.clientId, session_date: r.sessionDate, type: r.type, status: r.status,
+      consumed: r.consumed, consumed_from: r.consumedFrom, fee: r.fee, amount: r.amount,
+      condition: orNull(r.condition), menu: orNull(r.menu), homecare: orNull(r.homecare), share: r.share, note: orNull(r.note),
+    }));
+  },
+  async getSession(id) {
+    const sb = await getClient();
+    const row = unwrap(await sb.from('sessions').select('*').eq('id', id).maybeSingle()) as Row | null;
+    return row ? toAdminSession(row) : null;
+  },
+  async deleteSession(id) {
+    const sb = await getClient();
+    check(await sb.from('sessions').delete().eq('id', id));
+  },
+};
 
 /** 「空文字」ではなく null を保存する（DB の制約と、表示の両方でその方が扱いやすい） */
 const orNull = (s: string) => (s === '' ? null : s);
@@ -377,6 +442,41 @@ export const supabaseApi: MemberApi = {
   async adminAddComment(logId, body) {
     const sb = await getClient();
     check(await sb.from('activity_comments').insert({ log_id: logId, body }));
+  },
+  /* --- カルテ --- */
+  async adminListClients() {
+    const sb = await getClient();
+    return (unwrap(await sb.from('clients').select('*').order('code')) as Row[]).map(toClient);
+  },
+  async adminSaveClient(input: AdminClientInput) {
+    const sb = await getClient();
+    if (!input.name.trim()) throw new Error('お名前を入力してください。');
+    if (input.id) {
+      return toClient(unwrap(await sb.from('clients').update(clientRow(input)).eq('id', input.id).select().single()) as Row);
+    }
+    // コードは、いまの最大の番号 + 1（同時に作ると重なるが、DB の一意制約で止まる）
+    const codes = (unwrap(await sb.from('clients').select('code')) as Row[]).map((r) => Number(/^TNK-(\d+)$/.exec(str(r.code))?.[1] ?? 0));
+    const code = `TNK-${String(Math.max(0, ...codes) + 1).padStart(4, '0')}`;
+    return toClient(unwrap(await sb.from('clients').insert({ ...clientRow(input), code }).select().single()) as Row);
+  },
+  async adminDeleteClient(id) {
+    const sb = await getClient();
+    check(await sb.from('clients').delete().eq('id', id));
+  },
+  async adminListSessions(clientId) {
+    const sb = await getClient();
+    const rows = unwrap(
+      await sb.from('sessions').select('*').eq('client_id', clientId).order('session_date', NEWEST_FIRST).order('created_at', NEWEST_FIRST)
+    ) as Row[];
+    return rows.map(toAdminSession);
+  },
+  adminRecordSession: (clientId: string, input: SessionRecordInput) =>
+    recordSession(supabaseKarteStore, clientId, input, todayLocal()),
+  adminDeleteSession: (sessionId) => removeSession(supabaseKarteStore, sessionId),
+  adminRollMonth: (clientId) => closeMonth(supabaseKarteStore, clientId, todayLocal()),
+  async adminLinkClient(clientId, email) {
+    const sb = await getClient();
+    check(await sb.rpc('link_client', { p_client: clientId, p_email: email.trim() }));
   },
   async adminGetMemberLogs(userId) {
     const [body, meals, workouts] = await Promise.all([
