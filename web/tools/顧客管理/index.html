@@ -1,0 +1,886 @@
+<title>TONEKA 顧客管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500&family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 配置: 左に顧客一覧（スマホでは引き出し）、右に4つの画面（カルテ・LINE文面・問診票・経営）。色はHPと同じ真鍮色 */
+:root {
+  --bg: #f9f8f5; --card: #ffffff; --sub: #f4f0e8; --field: #fdfcf9;
+  --ink: #2b2927; --gray: #6f6a63; --line: #e6e1d8;
+  --gold: #a38252; --gold-d: #8a6b3f; --gold-l: #d4c3a3; --on-gold: #ffffff;
+  --green: #3b7a57; --red: #c84b4b; --blue: #3b6e8c;
+  --warn-bg: #fbeee0; --warn-ink: #8a4b12;
+  --bubble: #e8f0fe; --bubble-line: #c2d7f5;
+  --side: #2b2927; --side-ink: #ffffff; --side-gray: #bbb5aa; --side-field: #1e1d1b;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --f-serif: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  --f-latin: "Jost", "Futura", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1a18; --card: #262320; --sub: #2f2b27; --field: #1f1d1b;
+    --ink: #f0ebe2; --gray: #a39b8f; --line: #3a3631;
+    --gold: #c4a56a; --gold-d: #d9bb7f; --gold-l: #8a6b3f; --on-gold: #1c1a18;
+    --green: #5fb184; --red: #e07a7a; --blue: #6fa5c4;
+    --warn-bg: #3a2f22; --warn-ink: #f0c48d;
+    --bubble: #1f2a3a; --bubble-line: #34465e;
+    --side: #141312; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1a18; --card: #262320; --sub: #2f2b27; --field: #1f1d1b;
+  --ink: #f0ebe2; --gray: #a39b8f; --line: #3a3631;
+  --gold: #c4a56a; --gold-d: #d9bb7f; --gold-l: #8a6b3f; --on-gold: #1c1a18;
+  --green: #5fb184; --red: #e07a7a; --blue: #6fa5c4;
+  --warn-bg: #3a2f22; --warn-ink: #f0c48d;
+  --bubble: #1f2a3a; --bubble-line: #34465e;
+  --side: #141312; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); }
+button, input, select, textarea { font-family: inherit; }
+.app { display: flex; height: 100%; }
+
+/* ---- 左：顧客一覧 ---- */
+.side { width: 280px; flex: none; background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; z-index: 30; }
+.brand { padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.brand b { font-family: var(--f-latin); font-weight: 500; letter-spacing: .3em; font-size: 20px; color: var(--gold); }
+.brand span { display: block; font-size: 10.5px; color: var(--side-gray); letter-spacing: .08em; margin-top: 4px; }
+.side-tools { padding: 10px 12px; display: grid; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.side input[type=search] { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: var(--side-field); color: #fff; font-size: 13px; }
+.btn { border: 0; border-radius: 6px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer; background: var(--gold); color: var(--on-gold); }
+.btn:hover { background: var(--gold-d); }
+.btn:focus-visible, .tab:focus-visible, .chip:focus-visible, .cl:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.ghost:hover { background: var(--sub); }
+.btn.danger { background: var(--red); color: #fff; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.side .btn.util { background: #3a3835; color: #ddd; font-weight: 500; font-size: 12px; padding: 7px; }
+.side .btn.util:hover { background: var(--gold); color: var(--on-gold); }
+.cl-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+.cl { display: block; width: 100%; text-align: left; background: none; border: 0; color: inherit; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.06); border-left: 4px solid transparent; cursor: pointer; }
+.cl:hover { background: rgba(255,255,255,.05); }
+.cl.on { background: rgba(163,130,82,.25); border-left-color: var(--gold); }
+.cl-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-weight: 700; font-size: 14px; }
+.cl-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--side-gray); margin-top: 3px; }
+.tag { font-size: 10px; background: var(--gold); color: var(--on-gold); padding: 1px 7px; border-radius: 99px; white-space: nowrap; font-weight: 500; }
+.tag.new { background: var(--red); color: #fff; }
+.tag.alert { background: #d98a2b; color: #1c1a18; }
+.side-foot { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,.1); display: grid; gap: 6px; }
+
+/* ---- 右：本体 ---- */
+.main { flex: 1; min-width: 0; overflow-y: auto; }
+.top { position: sticky; top: 0; z-index: 20; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 20px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.tab.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab.hl { border-color: var(--gold); color: var(--gold-d); }
+.tab.hl.on { background: var(--gold); color: var(--on-gold); }
+.menu-btn { display: none; }
+.saved { font-size: 11.5px; color: var(--green); font-weight: 700; }
+.view { display: none; padding: 20px 22px 60px; max-width: 1360px; margin: 0 auto; }
+.view.on { display: block; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; } .c7 { grid-column: span 7; } .c12 { grid-column: 1 / -1; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.card h2 { font-family: var(--f-serif); font-size: 16px; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--sub); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card h2 small { font-family: var(--f-body); font-size: 10.5px; letter-spacing: .08em; color: var(--gold); font-weight: 700; }
+.banner { background: linear-gradient(135deg, #2b2927, #3d3934); color: #fff; border-radius: 12px; padding: 16px 22px; margin-bottom: 16px; display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: center; }
+.banner h1 { font-family: var(--f-serif); font-size: 23px; margin: 0 0 4px; }
+.banner p { margin: 0; font-size: 12px; color: #ccc; }
+.cd { background: rgba(163,130,82,.25); border: 1px solid var(--gold); border-radius: 8px; padding: 8px 16px; text-align: right; }
+.cd small { display: block; font-size: 11px; color: var(--gold-l); }
+.cd b { font-size: 18px; color: #fff; } .cd b span { font-size: 26px; color: #ffd27d; margin: 0 3px; }
+.alerts { display: grid; gap: 6px; margin-bottom: 16px; }
+.alert-i { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.6; }
+.alert-i.info { background: var(--sub); color: var(--ink); }
+.demo { background: var(--sub); border: 1px dashed var(--gold); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+.fg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.fg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.f.full { grid-column: 1 / -1; }
+label, .lab { font-size: 11px; color: var(--gray); font-weight: 700; }
+input, select, textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13.5px; color: var(--ink); background: var(--field); width: 100%; min-width: 0; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+input[readonly] { background: var(--sub); }
+input[type=checkbox] { width: auto; }
+input[type=range] { padding: 0; accent-color: var(--gold); }
+textarea { resize: vertical; min-height: 64px; line-height: 1.6; }
+.chk { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink); font-weight: 400; }
+.counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.cnt { background: var(--sub); border-radius: 8px; padding: 10px; text-align: center; }
+.cnt .n { font-size: 24px; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
+.cnt .s { font-size: 10.5px; color: var(--gray); }
+.cnt .b { display: flex; justify-content: center; gap: 6px; }
+.cnt .b button { width: 28px; height: 24px; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 4px; cursor: pointer; font-weight: 700; }
+.cnt .b button:hover { background: var(--gold); color: var(--on-gold); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.chip { padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.chip.red.on { background: var(--red); color: #fff; border-color: var(--red); }
+.chip.blue.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.chip.gold.on { background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
+.stage { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: 8px; height: 320px; cursor: crosshair; user-select: none; touch-action: manipulation; }
+.pin { position: absolute; width: 18px; height: 18px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,.3); cursor: pointer; padding: 0; }
+.pin.red { background: var(--red); } .pin.blue { background: var(--blue); } .pin.gold { background: var(--gold); }
+.note-s { font-size: 11.5px; color: var(--gray); margin: 8px 0 0; line-height: 1.7; }
+.radar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; }
+.sl { display: flex; flex-direction: column; font-size: 12px; margin-bottom: 8px; }
+.sl div { display: flex; justify-content: space-between; font-weight: 700; }
+.logform { background: var(--sub); border-radius: 8px; padding: 14px; margin-bottom: 14px; display: grid; gap: 10px; }
+.log { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; background: var(--field); }
+.log-h { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: var(--gold-d); margin-bottom: 6px; }
+.log-b { font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.log-n { font-size: 12px; color: var(--gray); margin-top: 6px; }
+.msg { font-size: 12.5px; color: var(--green); font-weight: 700; min-height: 1.4em; }
+.msg.err { color: var(--red); }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 10px; padding: 16px; }
+.kpi .l { font-size: 12px; color: var(--gray); font-weight: 700; }
+.kpi .v { font-family: var(--f-serif); font-size: 26px; font-weight: 700; margin: 6px 0; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: 11px; color: var(--gray); }
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { background: var(--sub); color: var(--gray); font-size: 12px; white-space: nowrap; }
+tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
+.bubble { background: var(--bubble); border: 1px solid var(--bubble-line); border-radius: 12px; padding: 16px; font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 300px; }
+.ng { background: #fbd9d9; color: #7a1f1f; border-radius: 3px; padding: 0 2px; }
+.ngbox { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 9px 12px; font-size: 12.5px; margin-top: 10px; line-height: 1.7; }
+
+/* ---- 問診票（お客様用の全画面） ---- */
+.intake { position: fixed; inset: 0; z-index: 100; background: var(--bg); overflow-y: auto; padding: 22px 16px 60px; }
+.intake .sheet { max-width: 720px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px 24px; }
+.intake h1 { font-family: var(--f-serif); font-size: 23px; margin: 6px 0; text-align: center; }
+.intake .eb { text-align: center; color: var(--gold); font-size: 11.5px; letter-spacing: .2em; font-weight: 700; }
+.intake .lead { text-align: center; font-size: 13px; color: var(--gray); line-height: 1.8; margin: 0 0 22px; }
+.intake .out { text-align: center; margin-top: 18px; }
+.privacy { background: var(--sub); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; line-height: 1.8; margin-top: 4px; }
+
+/* ---- ダイアログ ---- */
+.modal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.5); display: grid; place-items: center; padding: 16px; }
+.modal[hidden] { display: none; }
+.dlg { background: var(--card); color: var(--ink); border-radius: 12px; padding: 20px; width: min(560px, 100%); max-height: 90vh; overflow-y: auto; display: grid; gap: 12px; }
+.dlg h3 { font-family: var(--f-serif); margin: 0; font-size: 17px; }
+.dlg textarea { min-height: 90px; font-size: 12px; font-family: monospace; }
+.row-b { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+@media (max-width: 1100px) { .c4, .c5, .c6, .c7 { grid-column: 1 / -1; } .kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 820px) {
+  .side { position: fixed; inset: 0 auto 0 0; transform: translateX(-100%); transition: transform .2s; width: min(300px, 86vw); }
+  .side.open { transform: none; }
+  .menu-btn { display: inline-block; }
+  .view { padding: 14px 12px 60px; }
+  .fg, .fg3, .radar { grid-template-columns: 1fr; }
+  .top { padding: 8px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><b>TONEKA</b><span>顧客管理（施術者用）</span></div>
+    <div class="side-tools">
+      <input type="search" id="q" placeholder="氏名・競技・目的で検索" aria-label="顧客を検索">
+      <button class="btn" id="btnNew">＋ 新しいカルテを作る</button>
+    </div>
+    <ul class="cl-list" id="clList"></ul>
+    <div class="side-foot">
+      <button class="btn util" id="btnData">データ（バックアップ・CSV）</button>
+      <button class="btn util" id="btnPin">問診票の終了用 暗証番号</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <nav class="top">
+      <div class="tabs" role="tablist">
+        <button class="btn ghost sm menu-btn" id="btnMenu">顧客一覧</button>
+        <button class="tab on" data-view="karte">1. カルテ・身体の記録</button>
+        <button class="tab" data-view="line">2. LINEの文面</button>
+        <button class="tab hl" data-view="intake">3. お客様に問診票を渡す</button>
+        <button class="tab" data-view="dash">4. 経営・消化・お知らせ</button>
+      </div>
+      <span class="saved" id="saved">この端末に自動保存</span>
+    </nav>
+
+    <!-- 1. カルテ -->
+    <section class="view on" id="view-karte">
+      <div class="demo" id="demoBar" hidden><span>いまの顧客は<b>デモ用の架空の方</b>です。実在の方ではありません。</span><button class="btn sm" id="btnClearDemo">デモを消して、自分のデータで始める</button></div>
+      <div class="banner">
+        <div><h1 id="bName">-</h1><p id="bSub">-</p></div>
+        <div class="cd"><small id="cdLabel">目標まで</small><b id="cdDays">-</b></div>
+      </div>
+      <div class="alerts" id="alerts"></div>
+      <div class="grid">
+        <section class="card c6">
+          <h2>基本情報 <small>PROFILE</small></h2>
+          <div class="fg">
+            <div class="f"><label for="k_name">氏名</label><input id="k_name" data-k="name"></div>
+            <div class="f"><label for="k_kana">フリガナ</label><input id="k_kana" data-k="kana"></div>
+            <div class="f"><label for="k_gender">性別</label><select id="k_gender" data-k="gender"><option>女性</option><option>男性</option></select></div>
+            <div class="f"><label for="k_dob">生年月日（任意）</label><input type="date" id="k_dob" data-k="dob"></div>
+            <div class="f"><label for="k_height">身長 cm</label><input type="number" step="0.1" id="k_height" data-k="height"></div>
+            <div class="f"><label for="k_weight">体重 kg（任意）</label><input type="number" step="0.1" id="k_weight" data-k="weight"></div>
+            <div class="f"><label for="k_age">年齢 / BMI（自動）</label><input id="k_age" readonly></div>
+            <div class="f"><label for="k_phone">電話番号</label><input type="tel" id="k_phone" data-k="phone"></div>
+            <div class="f full"><label for="k_email">メールアドレス</label><input type="email" id="k_email" data-k="email"></div>
+            <div class="f full"><label for="k_referrer">ご紹介者（男性のお客様は必須）</label><input id="k_referrer" data-k="referrer"></div>
+            <div class="f full"><label for="k_hobby">趣味・競技・ライフスタイル</label><input id="k_hobby" data-k="hobby"></div>
+          </div>
+        </section>
+
+        <section class="card c6">
+          <h2>プラン・回数・目標日 <small>PLAN</small></h2>
+          <div class="fg">
+            <div class="f full"><label for="k_plan">プラン（料金は税込）</label><select id="k_plan" data-k="plan"></select></div>
+            <div class="f" id="fTicketCount" hidden><label for="k_ticketCount">回数券の回数（8,800円×回数）</label><input type="number" min="4" id="k_ticketCount" data-k="ticketCount"></div>
+            <div class="f" id="fTicketDate" hidden><label for="k_ticketDate">回数券の購入日（購入日から2か月有効）</label><input type="date" id="k_ticketDate" data-k="ticketDate"></div>
+            <div class="f full" id="fShare" hidden><label for="k_group">家族・ペアの相手（回数を共有する方）</label><input id="k_group" data-k="group" placeholder="例：山田 太郎（夫）"></div>
+            <div class="f full" id="fPayer" hidden><label class="chk"><input type="checkbox" id="k_payer" data-kb="payer"> この方が請求の代表者（売上は代表者の1件だけに数えます）</label></div>
+            <div class="f"><label for="k_targetLabel">目標・大会の名前</label><input id="k_targetLabel" data-k="targetLabel" placeholder="例：名古屋ウィメンズマラソン"></div>
+            <div class="f"><label for="k_targetDate">目標日</label><input type="date" id="k_targetDate" data-k="targetDate"></div>
+          </div>
+          <div class="counters">
+            <div class="cnt"><div class="s">当月の残り枠</div><div class="n" id="n_remain">0</div><div class="b"><button data-cnt="remain" data-d="-1" aria-label="当月の残りを1減らす">−</button><button data-cnt="remain" data-d="1" aria-label="当月の残りを1増やす">＋</button></div></div>
+            <div class="cnt"><div class="s">前月からの繰越</div><div class="n" id="n_carry">0</div><div class="b"><button data-cnt="carry" data-d="-1" aria-label="繰越を1減らす">−</button><button data-cnt="carry" data-d="1" aria-label="繰越を1増やす">＋</button></div></div>
+            <div class="cnt"><div class="s">来店した回数（記録から）</div><div class="n" id="n_total">0</div><div class="s" id="n_last">-</div></div>
+          </div>
+          <p class="note-s" id="carryNote"></p>
+          <div class="row-b" style="justify-content:flex-start;margin:6px 0 12px"><button class="btn ghost sm" id="btnRoll">月次の締め（月初に1回）</button></div>
+          <div class="fg3">
+            <div class="f"><label for="k_consent">個人情報の取扱い 同意日</label><input type="date" id="k_consent" data-k="consent"></div>
+            <div class="f"><label for="k_photoOk">SNS撮影</label><select id="k_photoOk" data-k="photoOk"><option>NG</option><option>首から下・後ろ姿OK</option><option>顔出しOK</option></select></div>
+            <div class="f"><label for="k_tea">お好みの飲み物</label><input id="k_tea" data-k="tea"></div>
+          </div>
+        </section>
+
+        <section class="card c5">
+          <h2>ボディマップ（タップで記録） <small>BODY MAP</small></h2>
+          <div class="chips" role="group" aria-label="ピンの種類">
+            <button class="chip red on" data-pin="red">張り・痛み</button>
+            <button class="chip blue" data-pin="blue">硬さ・動きにくさ</button>
+            <button class="chip gold" data-pin="gold">整えた（リリース済み）</button>
+            <button class="chip" id="btnPinsClear" style="margin-left:auto">全部消す</button>
+          </div>
+          <div class="stage" id="stage">
+            <svg viewBox="0 0 260 280" width="100%" height="100%" style="pointer-events:none" aria-hidden="true">
+              <text x="65" y="20" text-anchor="middle" fill="var(--gray)" font-size="10" font-weight="bold">前（FRONT）</text>
+              <text x="195" y="20" text-anchor="middle" fill="var(--gray)" font-size="10" font-weight="bold">後ろ（BACK）</text>
+              <g transform="translate(25,28)" fill="var(--sub)" stroke="var(--gold)" stroke-width="1.2">
+                <circle cx="40" cy="18" r="14"/><rect x="35" y="32" width="10" height="8"/><path d="M18,40 L62,40 L56,115 L24,115 Z"/>
+                <path d="M18,40 L6,110 L14,112 L22,52 Z"/><path d="M62,40 L74,110 L66,112 L58,52 Z"/>
+                <path d="M24,115 L38,115 L36,215 L22,215 Z"/><path d="M42,115 L56,115 L58,215 L44,215 Z"/>
+              </g>
+              <g transform="translate(155,28)" fill="var(--sub)" stroke="var(--gray)" stroke-width="1.2">
+                <circle cx="40" cy="18" r="14"/><rect x="35" y="32" width="10" height="8"/><path d="M18,40 L62,40 L56,115 L24,115 Z"/>
+                <line x1="40" y1="40" x2="40" y2="115" stroke-dasharray="2,2"/>
+                <path d="M18,40 L6,110 L14,112 L22,52 Z"/><path d="M62,40 L74,110 L66,112 L58,52 Z"/>
+                <path d="M24,115 L38,115 L36,215 L22,215 Z"/><path d="M42,115 L56,115 L58,215 L44,215 Z"/>
+              </g>
+            </svg>
+            <div id="pins"></div>
+          </div>
+          <p class="note-s">図をタップするとピンが付きます。ピンをもう一度タップすると消えます。</p>
+        </section>
+
+        <section class="card c7">
+          <h2>6つの視点の記録（1〜10） <small>6-AXIS</small></h2>
+          <div class="radar">
+            <div style="text-align:center"><svg id="radarSvg" viewBox="0 0 260 240" width="100%" height="240" role="img" aria-label="6つの視点のレーダーチャート"></svg>
+              <div class="note-s"><b style="color:var(--gold)">■ いま</b>　／　<b style="color:var(--gray)">■ 初回（基準）</b></div></div>
+            <div id="sliders"></div>
+          </div>
+          <p class="note-s">施術の目安の記録です。診断や、数値による良し悪しの判断ではありません。お客様に見せるときは、そう伝えてください。</p>
+          <div class="row-b" style="justify-content:flex-start"><button class="btn ghost sm" id="btnBase">いまの点数を「初回の基準」にする</button></div>
+        </section>
+
+        <section class="card c12">
+          <h2>目的・目標・身体の見立て・ホームケア <small>NOTES</small></h2>
+          <div class="fg">
+            <div class="f"><label for="k_purpose">【目的】なぜ来たか・やりたいこと</label><textarea id="k_purpose" data-k="purpose"></textarea></div>
+            <div class="f"><label for="k_goal">【目標】いつまでに、どうなりたいか</label><textarea id="k_goal" data-k="goal"></textarea></div>
+            <div class="f"><label for="k_posture">姿勢・呼吸・動きの見立て（施術者のメモ）</label><textarea id="k_posture" data-k="posture"></textarea></div>
+            <div class="f"><label for="k_homework">ホームケア・宿題（LINEで送る内容）</label><textarea id="k_homework" data-k="homework"></textarea></div>
+          </div>
+          <p class="note-s">病名・診断名・通院歴・服薬など、医療に関わる内容は、お客様の同意なしに書かないでください。</p>
+        </section>
+
+        <section class="card c12">
+          <h2>セッション・キャンセルの記録 <small>LOGS</small></h2>
+          <div class="logform">
+            <div class="fg3">
+              <div class="f"><label for="l_date">日付</label><input type="date" id="l_date"></div>
+              <div class="f"><label for="l_type">種類</label><select id="l_type"></select></div>
+              <div class="f"><label class="chk" style="margin-top:20px"><input type="checkbox" id="l_waive"> 免除（災害・身内の不幸など）</label></div>
+            </div>
+            <div class="f"><label for="l_cond">今日の状態・主な訴え</label><input id="l_cond" placeholder="例：ランジで、ふくらはぎの外側が張る"></div>
+            <div class="f"><label for="l_content">やったこと・次回への申し送り</label><textarea id="l_content"></textarea></div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="btnLog">記録を保存する</button><span class="msg" id="logMsg" role="status"></span></div>
+            <p class="note-s" id="logHint"></p>
+          </div>
+          <div id="logs"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 2. LINE -->
+    <section class="view" id="view-line">
+      <div class="grid">
+        <div class="card c5">
+          <h2>LINEの文面を作る <small>LINE</small></h2>
+          <p class="note-s" style="margin-top:0">カルテの記録から、お客様に送る文面のたたき台を作ります。送る前に、必ず読んで、ご自分の言葉に直してください。</p>
+          <div class="fg" style="margin-top:12px">
+            <div class="f full"><label for="m_tpl">文面の種類</label><select id="m_tpl"><option value="after">セッションのあとのお礼</option><option value="remind">前日のリマインド</option><option value="count">回数・期限のお知らせ</option></select></div>
+            <div class="f full"><label for="m_next">次回のご予約メモ（任意）</label><input id="m_next" placeholder="例：10月23日（金）14:00〜"></div>
+            <div class="f full"><label for="m_free">ひとこと（任意）</label><input id="m_free" value="少しずつ寒くなってきたので、ゆっくり湯船につかってお休みください。"></div>
+          </div>
+          <div class="row-b" style="justify-content:flex-start;margin-top:14px"><button class="btn" id="btnCopyLine">文面をコピーする</button><span class="msg" id="copyMsg" role="status"></span></div>
+        </div>
+        <div class="card c7"><h2>プレビュー <small>PREVIEW</small></h2><div class="bubble" id="bubble"></div><div class="ngbox" id="ngbox" hidden></div></div>
+      </div>
+    </section>
+
+    <!-- 4. 経営 -->
+    <section class="view" id="view-dash">
+      <div class="kpis">
+        <div class="kpi"><div class="l">カルテの数</div><div class="v" id="kp1">0</div><div class="s">デモを含みます</div></div>
+        <div class="kpi"><div class="l">月額プランの売上（見込）</div><div class="v" id="kp2">¥0</div><div class="s">毎月の定額分。家族割は代表者のみ</div></div>
+        <div class="kpi"><div class="l">今月の売上（記録）</div><div class="v" id="kp3">¥0</div><div class="s">月額の見込み＋単発＋キャンセル料</div></div>
+        <div class="kpi"><div class="l">未消化の回数</div><div class="v" id="kp4">0 回</div><div class="s">当月残＋有効な繰越＋回数券の残り</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><h2>お知らせ（対応が必要なもの） <small>ALERTS</small></h2><div id="dashAlerts" class="alerts"></div></div>
+      <div class="card"><h2>全員の状況 <small>OVERVIEW</small></h2><div class="tw"><table><thead><tr><th>ID</th><th>氏名</th><th>プラン</th><th>料金</th><th>当月残 / 繰越</th><th>回数券の期限</th><th>お知らせ</th></tr></thead><tbody id="dashBody"></tbody></table></div></div>
+    </section>
+  </main>
+</div>
+
+<!-- 3. 問診票（お客様用・全画面） -->
+<div class="intake" id="intake" hidden>
+  <div class="sheet" id="intakeSheet">
+    <div class="eb">PERSONAL CONDITIONING SALON TONEKA</div>
+    <h1>初回のカウンセリングシート</h1>
+    <p class="lead">いまのお身体について、教えてください。書ける範囲で大丈夫です。</p>
+    <div class="fg" style="gap:14px">
+      <div class="f"><label for="i_name">お名前 *</label><input id="i_name" autocomplete="name"></div>
+      <div class="f"><label for="i_kana">フリガナ</label><input id="i_kana"></div>
+      <div class="f"><label for="i_gender">性別</label><select id="i_gender"><option>女性</option><option>男性</option></select></div>
+      <div class="f"><label for="i_ref">ご紹介者さまのお名前（男性のお客様）</label><input id="i_ref"></div>
+      <div class="f"><label for="i_phone">お電話番号</label><input type="tel" id="i_phone" autocomplete="tel"></div>
+      <div class="f"><label for="i_email">メールアドレス</label><input type="email" id="i_email" autocomplete="email"></div>
+      <div class="f full"><label for="i_hobby">ご趣味・いま行っているスポーツ</label><input id="i_hobby" placeholder="例：ランニング、ピラティス、散歩"></div>
+      <div class="f full"><label for="i_purpose">TONEKAに来た理由・やりたいこと</label><textarea id="i_purpose" placeholder="例：肩や首の重さが気になる。マラソンの後半でも、楽に走れるようになりたい"></textarea></div>
+      <div class="f full"><label for="i_goal">いつまでに、どんな状態になりたいですか？</label><textarea id="i_goal" placeholder="例：3月の大会まで、気持ちよく走りたい"></textarea></div>
+      <div class="f full"><label for="i_body">普段、張りやすい・痛みが出やすい部位</label><textarea id="i_body" placeholder="例：長く歩くと、ふくらはぎの外側が張る"></textarea></div>
+      <div class="f full"><label class="chk"><input type="checkbox" id="i_phoneCall"> 当日のアクセスなどを、お電話で詳しく聞きたい</label></div>
+      <div class="f full"><div class="privacy">いただいた情報は、ご案内とセッションの準備のためにのみ使います。病名・診断名・通院歴・服薬など、医療に関わることは、お書きいただかなくて大丈夫です。必要なときは、目的をお伝えして、ご同意をいただいてから、おうかがいします。</div></div>
+      <div class="f full"><label class="chk"><input type="checkbox" id="i_agree"> 上の内容を読んで、個人情報の取扱いに同意します *</label></div>
+    </div>
+    <p class="msg err" id="iMsg" role="alert"></p>
+    <button class="btn" style="width:100%;padding:14px;font-size:15px;margin-top:8px" id="btnSubmitIntake">入力を終わる</button>
+    <div class="out"><button class="btn ghost sm" id="btnIntakeBack">スタッフ画面へ戻る（暗証番号が必要です）</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'toneka_crm_v1';
+  var PINKEY = 'toneka_crm_pin_v1';
+  var MONTHLY_KINDS = ['monthly'];
+
+  /* ---------- 料金表（2026-10 時点のメニュー表と同じ。税込） ---------- */
+  var PLANS = [
+    { k: 'm4', label: '月4回（30,800円／月）', price: 30800, kind: 'monthly', sessions: 4 },
+    { k: 'm2', label: '月2回（16,000円／月）', price: 16000, kind: 'monthly', sessions: 2 },
+    { k: 'pair4', label: 'ペア 月4回（お一人 26,400円／月）', price: 26400, kind: 'monthly', sessions: 4 },
+    { k: 'fam6', label: '家族割 月6回（50,160円／月・家族でシェア）', price: 50160, kind: 'monthly', sessions: 6, shared: true },
+    { k: 'fam8', label: '家族割 月8回（66,880円／月・家族でシェア）', price: 66880, kind: 'monthly', sessions: 8, shared: true },
+    { k: 'ticket', label: '回数券（8,800円×回数・購入日から2か月）', price: null, kind: 'ticket' },
+    { k: 'visitor', label: '都度ビジター 60分（12,000円）', price: 12000, kind: 'single' },
+    { k: 'online', label: 'オンライン 50分（10,000円）', price: 10000, kind: 'single' },
+    { k: 'trial', label: '初回体験 60分（3,300円）', price: 3300, kind: 'single' },
+    { k: 'stretch', label: 'コンディショニングストレッチ（案・未決 6,000円）', price: 6000, kind: 'single' }
+  ];
+  var TICKET_UNIT = 8800;
+  var SESSION_TYPES = [
+    { k: 'regular', label: '通常セッション（60分）' },
+    { k: 'trial', label: '初回体験（60分）' },
+    { k: 'visitor', label: '都度ビジター（60分）' },
+    { k: 'online', label: 'オンライン（50分）' },
+    { k: 'cancel_free', label: 'キャンセル（前日23:59まで・料金なし）' },
+    { k: 'cancel_same', label: 'キャンセル（当日）' },
+    { k: 'noshow', label: '無断キャンセル' }
+  ];
+  var ATTEND = ['regular', 'trial', 'visitor', 'online'];
+  var RADAR = ['呼吸・胸郭', '胸椎・肩甲帯', '股関節・骨盤', '体幹の安定', '全身の連動', '疲れにくさ'];
+  var RADAR_LONG = ['① 呼吸・胸郭', '② 胸椎・肩甲帯の動き', '③ 股関節・骨盤のコントロール', '④ 体幹の安定', '⑤ 全身の連動・出力', '⑥ 疲れにくさ（回復・下肢）'];
+  var NG_WORDS = ['治療', '治る', '治り', '完治', '矯正', '改善します', '解消します', '必ず', '保証', '効果があります'];
+
+  /* ---------- 日付 ---------- */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parse(s) { if (!s) return null; var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function today() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addMonths(d, n) { var x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x = new Date(d.getFullYear(), d.getMonth() + n + 1, 0); return x; }
+  function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+  function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+  function jp(s) { var d = typeof s === 'string' ? parse(s) : s; return d ? (d.getMonth() + 1) + '月' + d.getDate() + '日' : ''; }
+  function yen(n) { return '¥' + Number(n || 0).toLocaleString('ja-JP'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- データ ---------- */
+  function planOf(c) { for (var i = 0; i < PLANS.length; i++) if (PLANS[i].k === c.plan) return PLANS[i]; return PLANS[0]; }
+  function priceOf(c) { var p = planOf(c); if (p.k === 'ticket') return TICKET_UNIT * (+c.ticketCount || 0); return p.price; }
+  function ticketExpire(c) { var d = parse(c.ticketDate); return d ? addMonths(d, 2) : null; }
+  function carryValid(c) { if (!c.carry) return 0; var e = parse(c.carryExpire); return (e && e < today()) ? 0 : c.carry; }
+  function carryDead(c) { var e = parse(c.carryExpire); return !!(c.carry && e && e < today()); }
+  function avail(c) { return (c.remain || 0) + carryValid(c); }
+  function ageOf(dob) { var b = parse(dob); if (!b) return '-'; var n = today(), a = n.getFullYear() - b.getFullYear(); var m = n.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--; return a + '歳'; }
+  function attended(c) { return (c.logs || []).filter(function (l) { return ATTEND.indexOf(l.type) >= 0; }); }
+  function lastVisit(c) { var a = attended(c).map(function (l) { return l.date; }).sort(); return a.length ? a[a.length - 1] : ''; }
+  function blank() {
+    return { id: '', name: '', kana: '', gender: '女性', dob: '', height: '', weight: '', phone: '', email: '', referrer: '', hobby: '',
+      plan: 'trial', ticketCount: 4, ticketDate: '', group: '', payer: true, targetLabel: '', targetDate: '',
+      remain: 0, carry: 0, carryExpire: '', consent: '', photoOk: 'NG', tea: '', purpose: '', goal: '', posture: '', homework: '',
+      radar: [6, 6, 6, 6, 6, 6], baseRadar: [6, 6, 6, 6, 6, 6], pins: [], logs: [], isNew: false, demo: false };
+  }
+  function nextId(list) { var max = 0; list.forEach(function (c) { var m = /TNK-(\d+)/.exec(c.id || ''); if (m) max = Math.max(max, +m[1]); }); return 'TNK-' + ('000' + (max + 1)).slice(-4); }
+
+  /* ---------- デモ用の架空データ ---------- */
+  function demoData() {
+    var t = today();
+    var a = blank();
+    Object.assign(a, { id: 'TNK-0001', demo: true, name: '山田 花子', kana: 'ヤマダ ハナコ', gender: '女性', dob: '1988-04-12', height: 160, weight: 52, phone: '000-0000-0000', email: 'demo1@example.com', hobby: 'ランニング、ピラティス',
+      plan: 'm4', remain: 2, carry: 1, carryExpire: ymd(addMonths(endOfMonth(t), 0)), targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', consent: ymd(addMonths(t, -2)), photoOk: '首から下・後ろ姿OK', tea: '白湯',
+      purpose: 'マラソンの後半でも、呼吸が浅くならずに走りたい。肩のこわばりが気になる。', goal: '3月の大会を、楽しく完走する。',
+      posture: '・胸まわりが固く、息を吐き切りにくい\n・股関節の前側が詰まりやすく、骨盤が前に倒れやすい',
+      homework: '① 仰向けで、膝を立てて、ゆっくり息を吐く（5回）\n② 四つ這いで、背中をまるめる・ゆるめる（左右5回ずつ）',
+      radar: [7, 6, 6, 7, 7, 6], baseRadar: [5, 5, 5, 6, 6, 5],
+      pins: [{ x: 30, y: 36, color: 'blue' }, { x: 72, y: 36, color: 'red' }, { x: 27, y: 58, color: 'gold' }],
+      logs: [{ id: uid(), date: ymd(addMonths(t, -1)), type: 'trial', label: '初回体験（60分）', condition: '肩のこわばり、息が浅い感じ', content: 'カウンセリング。胸まわりのストレッチと、呼吸のワーク。ホームケアを2つ伝えた。', amount: 3300, consumed: 0, from: '', note: '' },
+        { id: uid(), date: ymd(new Date(t.getTime() - 9 * 86400000)), type: 'regular', label: '通常セッション（60分）', condition: '走ったあとの、ふくらはぎの張り', content: '足首と股関節の動きを確認。着地のときの重心を一緒に練習。', amount: 0, consumed: 1, from: 'remain', note: '' }] });
+    var b = blank();
+    Object.assign(b, { id: 'TNK-0002', demo: true, name: '田中 みどり', kana: 'タナカ ミドリ', gender: '女性', dob: '1979-09-02', hobby: '散歩、ヨガ', plan: 'ticket', ticketCount: 4, ticketDate: ymd(new Date(t.getTime() - 50 * 86400000)), remain: 1, consent: ymd(addMonths(t, -2)), photoOk: 'NG',
+      purpose: '長く座ったあとの、腰まわりの重さをやわらげたい。', goal: '', radar: [6, 6, 5, 6, 6, 6], baseRadar: [5, 5, 5, 5, 6, 5],
+      logs: [{ id: uid(), date: ymd(new Date(t.getTime() - 20 * 86400000)), type: 'regular', label: '通常セッション（60分）', condition: '腰まわりの重さ', content: '股関節まわりのストレッチ。', amount: 0, consumed: 1, from: 'remain', note: '' }] });
+    var c = blank();
+    Object.assign(c, { id: 'TNK-0003', demo: true, name: '佐藤 一郎', kana: 'サトウ イチロウ', gender: '男性', hobby: 'ゴルフ', plan: 'trial', consent: '', purpose: 'ゴルフの前に、体を動かしやすくしたい。', isNew: true });
+    return [a, b, c];
+  }
+
+  var clients = [];
+  var cur = 0;
+  var pinColor = 'red';
+  var saveTimer = null;
+
+  function load() {
+    try { var raw = localStorage.getItem(KEY); if (raw) { var p = JSON.parse(raw); if (Array.isArray(p) && p.length) return p; } } catch (e) {}
+    return null;
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(clients)); $('saved').textContent = 'この端末に自動保存 ' + new Date().toLocaleTimeString('ja-JP'); }
+    catch (e) { $('saved').textContent = '保存できません（ブラウザの設定を確認してください）'; }
+  }
+  function touch() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 200); }
+  function C() { return clients[cur]; }
+
+  /* ---------- お知らせ（アラート） ---------- */
+  function alertsOf(c) {
+    var out = [], t = today(), p = planOf(c);
+    if (!c.consent) out.push({ w: 1, t: '個人情報の取扱いの同意日が未入力です。' });
+    if (c.gender === '男性' && !String(c.referrer || '').trim()) out.push({ w: 1, t: '男性のお客様は、ご紹介者の入力が必要です。' });
+    if (carryDead(c)) out.push({ w: 1, t: '繰越の期限（' + jp(c.carryExpire) + '）が過ぎています。繰越の ' + c.carry + ' 回は使えません。数を直してください。' });
+    else if (c.carry && c.carryExpire) { var d1 = daysBetween(t, parse(c.carryExpire)); if (d1 <= 14) out.push({ w: 1, t: '繰越の ' + c.carry + ' 回は、' + jp(c.carryExpire) + '（あと' + d1 + '日）までです。' }); }
+    if (p.kind === 'ticket') {
+      var e = ticketExpire(c);
+      if (!e) out.push({ w: 0, t: '回数券の購入日が未入力です。期限を計算できません。' });
+      else { var d2 = daysBetween(t, e); if (c.remain > 0 && d2 < 0) out.push({ w: 1, t: '回数券の期限（' + jp(e) + '）が過ぎています。残り ' + c.remain + ' 回。' }); else if (c.remain > 0 && d2 <= 14) out.push({ w: 1, t: '回数券の期限は ' + jp(e) + '（あと' + d2 + '日）。残り ' + c.remain + ' 回。' }); }
+    }
+    if (p.kind === 'monthly' && c.remain > 0) { var left = daysBetween(t, endOfMonth(t)); if (left <= 10) out.push({ w: 0, t: '今月の残りは ' + c.remain + ' 回です（月末まであと' + left + '日）。次回の予約をご案内できます。' }); }
+    if (p.kind === 'monthly') { var lv = lastVisit(c); if (lv && daysBetween(parse(lv), t) > 35) out.push({ w: 0, t: '最後の来店から ' + daysBetween(parse(lv), t) + ' 日たっています。' }); }
+    if (c.targetDate) { var d3 = daysBetween(t, parse(c.targetDate)); if (d3 >= 0 && d3 <= 30) out.push({ w: 0, t: (c.targetLabel || '目標日') + 'まで、あと' + d3 + '日です。' }); }
+    return out;
+  }
+
+  /* ---------- 画面の描画 ---------- */
+  function renderList() {
+    var q = $('q').value.trim().toLowerCase();
+    var ul = $('clList'); ul.innerHTML = '';
+    clients.forEach(function (c, i) {
+      if (q && (c.name + c.kana + c.hobby + c.purpose + c.goal).toLowerCase().indexOf(q) < 0) return;
+      var li = document.createElement('li');
+      var al = alertsOf(c).filter(function (a) { return a.w; }).length;
+      li.innerHTML = '<button class="cl' + (i === cur ? ' on' : '') + '" data-i="' + i + '"><div class="cl-top"><span>' + esc(c.name || '（名前なし）') + '</span><span>' +
+        (c.isNew ? '<span class="tag new">NEW</span> ' : '') + (al ? '<span class="tag alert">要確認</span> ' : '') + '</span></div>' +
+        '<div class="cl-meta"><span>' + esc(planOf(c).label.split('（')[0]) + '</span><span>残 ' + avail(c) + '回</span></div></button>';
+      ul.appendChild(li);
+    });
+  }
+  function fillPlanSelect() { $('k_plan').innerHTML = PLANS.map(function (p) { return '<option value="' + p.k + '">' + esc(p.label) + '</option>'; }).join(''); }
+  function fillTypeSelect() { $('l_type').innerHTML = SESSION_TYPES.map(function (s) { return '<option value="' + s.k + '">' + esc(s.label) + '</option>'; }).join(''); }
+
+  function renderKarte() {
+    var c = C(); if (!c) return;
+    document.querySelectorAll('[data-k]').forEach(function (el) { el.value = c[el.getAttribute('data-k')] == null ? '' : c[el.getAttribute('data-k')]; });
+    document.querySelectorAll('[data-kb]').forEach(function (el) { el.checked = !!c[el.getAttribute('data-kb')]; });
+    var p = planOf(c);
+    $('fTicketCount').hidden = $('fTicketDate').hidden = p.k !== 'ticket';
+    $('fShare').hidden = !(p.k === 'pair4' || p.shared);
+    $('fPayer').hidden = !p.shared;
+    var bmi = (+c.height > 0 && +c.weight > 0) ? ' / BMI ' + (c.weight / Math.pow(c.height / 100, 2)).toFixed(1) : '';
+    $('k_age').value = ageOf(c.dob) + bmi;
+    $('bName').textContent = (c.name || '（名前なし）') + ' 様';
+    $('bSub').textContent = c.id + ' ｜ ' + p.label.split('（')[0] + (priceOf(c) ? '（' + yen(priceOf(c)) + '）' : '') + ' ｜ ' + (c.hobby || '趣味・競技 未入力');
+    var td = c.targetDate ? daysBetween(today(), parse(c.targetDate)) : null;
+    $('cdLabel').textContent = (c.targetLabel || '目標日') + 'まで';
+    $('cdDays').innerHTML = td == null ? '未設定' : (td >= 0 ? 'あと<span>' + td + '</span>日' : '終了（' + (-td) + '日前）');
+    $('n_remain').textContent = c.remain || 0; $('n_carry').textContent = c.carry || 0;
+    $('n_total').textContent = attended(c).length; var lv = lastVisit(c); $('n_last').textContent = lv ? '最後：' + jp(lv) : '来店の記録なし';
+    var notes = [];
+    if (p.kind === 'ticket') { var e = ticketExpire(c); notes.push('回数券：' + (e ? jp(e) + 'まで有効（購入日から2か月）' : '購入日を入れると期限が出ます') + '。合計 ' + yen(priceOf(c))); }
+    if (c.carry) notes.push('繰越の期限：' + (c.carryExpire ? jp(c.carryExpire) : '未設定') + (carryDead(c) ? '（期限切れ）' : ''));
+    $('carryNote').textContent = notes.join('　／　');
+    $('demoBar').hidden = !clients.some(function (x) { return x.demo; });
+    var al = alertsOf(c);
+    $('alerts').innerHTML = al.map(function (a) { return '<div class="alert-i' + (a.w ? '' : ' info') + '">' + esc(a.t) + '</div>'; }).join('');
+    renderPins(); renderRadar(); renderLogs(); renderLogHint();
+  }
+  function renderLogHint() {
+    var c = C(), p = planOf(c);
+    $('logHint').textContent = '現在のプラン：' + p.label.split('（')[0] + '。回数の消化・料金は、種類に合わせて自動で計算します（繰越を先に使います）。';
+  }
+
+  /* ボディマップ */
+  function renderPins() {
+    var box = $('pins'); box.innerHTML = '';
+    (C().pins || []).forEach(function (p, i) {
+      var b = document.createElement('button'); b.className = 'pin ' + p.color; b.style.left = p.x + '%'; b.style.top = p.y + '%'; b.title = 'もう一度タップして消す'; b.setAttribute('aria-label', 'ピンを消す');
+      b.addEventListener('click', function (ev) { ev.stopPropagation(); C().pins.splice(i, 1); renderPins(); touch(); });
+      box.appendChild(b);
+    });
+  }
+  /* レーダー */
+  function renderRadar() {
+    var c = C(), sl = $('sliders'); sl.innerHTML = '';
+    RADAR_LONG.forEach(function (lb, i) {
+      var d = document.createElement('div'); d.className = 'sl';
+      d.innerHTML = '<div><span>' + esc(lb) + '</span><span id="rv' + i + '">' + c.radar[i] + '</span></div><input type="range" min="1" max="10" value="' + c.radar[i] + '" aria-label="' + esc(lb) + '">';
+      d.querySelector('input').addEventListener('input', function (e) { c.radar[i] = +e.target.value; $('rv' + i).textContent = e.target.value; drawRadar(); touch(); });
+      sl.appendChild(d);
+    });
+    drawRadar();
+  }
+  function drawRadar() {
+    var c = C(), cx = 130, cy = 120, R = 82, h = '';
+    function pt(i, v) { var a = Math.PI * 2 * i / 6 - Math.PI / 2; return [cx + Math.cos(a) * R * v / 10, cy + Math.sin(a) * R * v / 10]; }
+    [2, 4, 6, 8, 10].forEach(function (s) { h += '<polygon points="' + RADAR.map(function (_, i) { return pt(i, s).join(','); }).join(' ') + '" fill="none" stroke="var(--line)"/>'; });
+    RADAR.forEach(function (lb, i) {
+      var e = pt(i, 10), a = Math.PI * 2 * i / 6 - Math.PI / 2, lx = cx + Math.cos(a) * (R + 22), ly = cy + Math.sin(a) * (R + 14) + 4;
+      h += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0] + '" y2="' + e[1] + '" stroke="var(--line)"/>';
+      h += '<text x="' + lx + '" y="' + ly + '" text-anchor="middle" font-size="10" fill="var(--gray)">' + lb + '</text>';
+    });
+    h += '<polygon points="' + c.baseRadar.map(function (v, i) { return pt(i, v).join(','); }).join(' ') + '" fill="var(--gray)" fill-opacity=".15" stroke="var(--gray)" stroke-width="1.2" stroke-dasharray="3,2"/>';
+    h += '<polygon points="' + c.radar.map(function (v, i) { return pt(i, v).join(','); }).join(' ') + '" fill="var(--gold)" fill-opacity=".3" stroke="var(--gold)" stroke-width="2"/>';
+    $('radarSvg').innerHTML = h;
+  }
+
+  /* セッション・キャンセルの記録 */
+  function renderLogs() {
+    var c = C(), box = $('logs'); var ls = (c.logs || []).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (!ls.length) { box.innerHTML = '<p class="note-s">まだ記録がありません。上のフォームから、最初の記録を保存してください。</p>'; return; }
+    box.innerHTML = ls.map(function (l) {
+      var meta = [];
+      if (l.consumed) meta.push('回数 −' + l.consumed);
+      if (l.amount) meta.push(yen(l.amount));
+      if (l.note) meta.push(l.note);
+      return '<div class="log"><div class="log-h"><span>' + esc(jp(l.date)) + '　' + esc(l.label) + '</span><button class="btn ghost sm" data-del="' + l.id + '">この記録を消す</button></div>' +
+        (l.condition ? '<div class="log-b"><b>状態：</b>' + esc(l.condition) + '</div>' : '') +
+        (l.content ? '<div class="log-b">' + esc(l.content) + '</div>' : '') +
+        (meta.length ? '<div class="log-n">' + esc(meta.join(' ／ ')) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  function useOne(c) {
+    if (carryValid(c) > 0) { c.carry -= 1; return 'carry'; }
+    if (c.remain > 0) { c.remain -= 1; return 'remain'; }
+    return '';
+  }
+  function addLog() {
+    var c = C(), p = planOf(c), type = $('l_type').value, waive = $('l_waive').checked, date = $('l_date').value || ymd(today());
+    var st = SESSION_TYPES.filter(function (s) { return s.k === type; })[0];
+    var log = { id: uid(), date: date, type: type, label: st.label, condition: $('l_cond').value.trim(), content: $('l_content').value.trim(), amount: 0, consumed: 0, from: '', note: '' };
+    var member = (p.kind === 'monthly' || p.kind === 'ticket');
+    var singles = { regular: null, trial: 3300, visitor: 12000, online: 10000 };
+    var sameFee = function () { return p.k === 'trial' ? 3300 : p.k === 'visitor' ? 6000 : member ? 1000 : null; };
+    var msg = '';
+    if (type === 'regular') {
+      if (member) { var f = useOne(c); if (f) { log.consumed = 1; log.from = f; msg = '回数を1つ使いました。'; } else { log.note = '残り枠がありません。回数は減らしていません。'; msg = '残り枠がありません（記録だけ保存）。'; } }
+      else { log.amount = p.price || 0; msg = '単発の料金 ' + yen(log.amount) + ' を記録しました。'; }
+    } else if (type === 'trial' || type === 'visitor' || type === 'online') { log.amount = singles[type]; msg = '料金 ' + yen(log.amount) + ' を記録しました。'; }
+    else if (type === 'cancel_same') {
+      if (waive) { log.note = '免除'; msg = '免除として記録しました。'; }
+      else { var fee = sameFee(); if (fee == null) { log.note = 'キャンセル料の額は未決です'; msg = 'このプランのキャンセル料は、まだ決まっていません。'; } else { log.amount = fee; log.note = '次回のご来店時にいただく'; msg = 'キャンセル料 ' + yen(fee) + ' を記録しました。'; } }
+    } else if (type === 'noshow') {
+      if (waive) { log.note = '免除'; msg = '免除として記録しました。'; }
+      else if (member) { var f2 = useOne(c); if (f2) { log.consumed = 1; log.from = f2; log.note = '無断キャンセルのため、1回分を消化'; msg = '無断キャンセルとして、1回分を使いました。'; } else { log.note = '無断キャンセル（残り枠なし）'; msg = '残り枠がないため、回数は減らしていません。'; } }
+      else { var fee2 = sameFee(); if (fee2 == null) { log.note = 'キャンセル料の額は未決です'; msg = 'このプランの額は、まだ決まっていません。'; } else { log.amount = fee2; log.note = '無断キャンセル。次回のご来店時にいただく'; msg = '無断キャンセルとして ' + yen(fee2) + ' を記録しました。'; } }
+    } else { msg = 'キャンセル（料金なし）を記録しました。'; }
+    if (type === 'trial' && c.isNew) c.isNew = false;
+    c.logs.push(log);
+    $('l_cond').value = ''; $('l_content').value = ''; $('l_waive').checked = false;
+    $('logMsg').className = 'msg'; $('logMsg').textContent = msg;
+    renderKarte(); renderList(); touch();
+  }
+  function delLog(id) {
+    var c = C(), l = c.logs.filter(function (x) { return x.id === id; })[0]; if (!l) return;
+    dialog('<h3>この記録を消しますか？</h3><p class="note-s">' + esc(jp(l.date) + '　' + l.label) + (l.consumed ? '<br>使った回数（' + l.consumed + '回）は、元に戻します。' : '') + '</p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn danger" data-ok>消す</button></div>', function (d) {
+      d.querySelector('[data-ok]').onclick = function () {
+        if (l.consumed) { if (l.from === 'carry') c.carry += l.consumed; else c.remain += l.consumed; }
+        c.logs = c.logs.filter(function (x) { return x.id !== id; }); closeDialog(); renderKarte(); renderList(); touch();
+      };
+    });
+  }
+  function rollMonth() {
+    var c = C(), p = planOf(c);
+    if (p.kind !== 'monthly') { dialog('<h3>月次の締め</h3><p class="note-s">月額プランの方だけに使います。</p><div class="row-b"><button class="btn" data-x>閉じる</button></div>'); return; }
+    var t = today(), exp = endOfMonth(addMonths(t, 1)), lose = carryValid(c);
+    dialog('<h3>月次の締めをします</h3><p class="note-s">いまの「当月の残り ' + c.remain + ' 回」を、<b>' + jp(exp) + 'まで使える繰越</b>にします。' + (lose ? '<br>これまでの繰越 ' + lose + ' 回は、<b>なくなります</b>。' : '') + '<br>当月の枠は、' + p.sessions + ' 回に戻ります。</p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn" data-ok>締める</button></div>', function (d) {
+      d.querySelector('[data-ok]').onclick = function () { c.carry = c.remain; c.carryExpire = c.remain ? ymd(exp) : ''; c.remain = p.sessions; closeDialog(); renderKarte(); renderList(); touch(); };
+    });
+  }
+
+  /* ---------- LINEの文面 ---------- */
+  function lineText() {
+    var c = C(), tpl = $('m_tpl').value, next = $('m_next').value.trim(), free = $('m_free').value.trim(), p = planOf(c), name = (c.name || '').split(/\s+/)[0] || c.name || '';
+    var ls = attended(c).sort(function (a, b) { return a.date < b.date ? 1 : -1; }), last = ls[0], t = '';
+    var left = [];
+    if (p.kind === 'monthly') left.push('今月の残り枠：' + c.remain + '回' + (carryValid(c) ? '（ほかに、繰越 ' + carryValid(c) + '回・' + jp(c.carryExpire) + 'まで）' : ''));
+    if (p.kind === 'ticket') { var e = ticketExpire(c); left.push('回数券の残り：' + c.remain + '回' + (e ? '（' + jp(e) + 'まで）' : '')); }
+    if (tpl === 'after') {
+      t = name + 'さま\n\n本日は、ありがとうございました。\n\n';
+      if (last && last.condition) t += '【今日のようす】\n' + last.condition + '\n\n';
+      if (c.homework) t += '【ご自宅でのホームケア（できる範囲で大丈夫です）】\n' + c.homework + '\n\n';
+      if (left.length) t += left.join('\n') + '\n\n';
+      if (next) t += '次回のご予約：' + next + '\n\n';
+      if (free) t += free + '\n\n';
+      t += 'TONEKA　伊藤';
+    } else if (tpl === 'remind') {
+      t = name + 'さま\n\nTONEKAです。\n' + (next ? next + ' の' : '明日の') + 'ご予約の、ご案内です。\n\n・動きやすい服装でお越しください（お着替えもできます）\n・ご到着が遅れそうなときは、お電話かLINEでご連絡ください\n・キャンセル・変更は、前日の23:59までにご連絡ください\n\nお会いできるのを楽しみにしています。\nTONEKA　伊藤';
+    } else {
+      t = name + 'さま\n\nTONEKAです。回数のお知らせです。\n\n' + (left.length ? left.join('\n') : '（回数の管理があるプランではありません）') + '\n\n';
+      if (next) t += '次回のご予約：' + next + '\n\n';
+      t += 'ご都合のよい日を、お知らせください。\nTONEKA　伊藤';
+    }
+    return t;
+  }
+  function renderLine() {
+    var t = lineText(), hit = [];
+    NG_WORDS.forEach(function (w) { if (t.indexOf(w) >= 0) hit.push(w); });
+    var html = esc(t);
+    hit.forEach(function (w) { html = html.split(esc(w)).join('<span class="ng">' + esc(w) + '</span>'); });
+    $('bubble').innerHTML = html;
+    var nb = $('ngbox');
+    if (hit.length) { nb.hidden = false; nb.textContent = '表現チェック：「' + hit.join('」「') + '」が入っています。効果を断定する言い方は避けて、「動きやすさのサポート」などに直してください。'; } else nb.hidden = true;
+  }
+
+  /* ---------- 経営 ---------- */
+  function renderDash() {
+    var t = today(), stock = 0, monthRev = 0, left = 0, ym = ymd(t).slice(0, 7), allAl = [];
+    clients.forEach(function (c) {
+      var p = planOf(c);
+      if (p.kind === 'monthly' && (!p.shared || c.payer)) stock += p.price;
+      (c.logs || []).forEach(function (l) { if (l.date.slice(0, 7) === ym && l.amount) monthRev += l.amount; });
+      left += avail(c);
+      alertsOf(c).forEach(function (a) { if (a.w) allAl.push({ c: c, t: a.t }); });
+    });
+    monthRev += stock;
+    $('kp1').textContent = clients.length; $('kp2').textContent = yen(stock); $('kp3').textContent = yen(monthRev); $('kp4').textContent = left + ' 回';
+    $('dashAlerts').innerHTML = allAl.length ? allAl.map(function (a) { return '<div class="alert-i"><b>' + esc(a.c.name) + '</b>：' + esc(a.t) + '</div>'; }).join('') : '<div class="alert-i info">いま、対応が必要なお知らせはありません。</div>';
+    $('dashBody').innerHTML = clients.map(function (c, i) {
+      var p = planOf(c), e = p.kind === 'ticket' ? ticketExpire(c) : null;
+      return '<tr class="row" data-i="' + i + '"><td>' + esc(c.id) + '</td><td>' + esc(c.name) + (c.demo ? ' <span class="tag">デモ</span>' : '') + '</td><td>' + esc(p.label.split('（')[0]) + '</td><td>' + (priceOf(c) ? yen(priceOf(c)) : '-') + '</td><td>' + (c.remain || 0) + ' / ' + carryValid(c) + '</td><td>' + (e ? jp(e) : '-') + '</td><td>' + alertsOf(c).filter(function (a) { return a.w; }).length + ' 件</td></tr>';
+    }).join('');
+  }
+
+  /* ---------- 画面の切り替え ---------- */
+  function showView(v) {
+    document.querySelectorAll('.view').forEach(function (e) { e.classList.remove('on'); });
+    document.querySelectorAll('.tab').forEach(function (e) { e.classList.toggle('on', e.getAttribute('data-view') === v); });
+    $('view-' + v).classList.add('on'); $('side').classList.remove('open');
+    if (v === 'line') renderLine(); if (v === 'dash') renderDash();
+  }
+  function openClient(i) { cur = i; var c = C(); if (c && c.isNew) { /* 開いたら NEW を外す前に、内容を確認できるよう保持 */ } renderList(); renderKarte(); showView('karte'); }
+
+  /* ---------- ダイアログ ---------- */
+  function dialog(html, bind) {
+    var d = $('dlg'); d.innerHTML = html; $('modal').hidden = false;
+    d.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = closeDialog; });
+    if (bind) bind(d);
+    var f = d.querySelector('input,textarea,button'); if (f) f.focus();
+  }
+  function closeDialog() { $('modal').hidden = true; $('dlg').innerHTML = ''; }
+
+  /* ---------- 問診票（お客様用） ---------- */
+  function hash(s) {
+    var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h >>> 0);
+  }
+  function pinHash() { try { return localStorage.getItem(PINKEY) || ''; } catch (e) { return ''; } }
+  function askPin(title, onOk) {
+    dialog('<h3>' + esc(title) + '</h3><div class="f"><label for="pinIn">暗証番号（数字4けた以上）</label><input id="pinIn" type="password" inputmode="numeric" autocomplete="off"></div><p class="msg err" id="pinMsg" role="alert"></p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn" data-ok>決定</button></div>', function (d) {
+      d.querySelector('[data-ok]').onclick = function () { var v = $('pinIn').value; if (!/^\d{4,}$/.test(v)) { $('pinMsg').textContent = '数字4けた以上で入力してください。'; return; } onOk(v); };
+      $('pinIn').onkeydown = function (e) { if (e.key === 'Enter') d.querySelector('[data-ok]').click(); };
+    });
+  }
+  function setPin(after) {
+    askPin('問診票を終わるための暗証番号を決めます', function (v) { try { localStorage.setItem(PINKEY, hash(v)); } catch (e) {} closeDialog(); if (after) after(); });
+  }
+  function startIntake() {
+    if (!pinHash()) { setPin(startIntake); return; }
+    ['i_name', 'i_kana', 'i_ref', 'i_phone', 'i_email', 'i_hobby', 'i_purpose', 'i_goal', 'i_body'].forEach(function (id) { $(id).value = ''; });
+    $('i_gender').value = '女性'; $('i_agree').checked = false; $('i_phoneCall').checked = false; $('iMsg').textContent = '';
+    $('intakeSheet').hidden = false; $('intake').hidden = false; $('intake').scrollTop = 0; document.body.style.overflow = 'hidden';
+  }
+  function submitIntake() {
+    var name = $('i_name').value.trim();
+    if (!name) { $('iMsg').textContent = 'お名前を入れてください。'; return; }
+    if (!$('i_agree').checked) { $('iMsg').textContent = '個人情報の取扱いへの同意に、チェックを入れてください。'; return; }
+    var c = blank();
+    Object.assign(c, { id: nextId(clients), name: name, kana: $('i_kana').value.trim(), gender: $('i_gender').value, referrer: $('i_ref').value.trim(), phone: $('i_phone').value.trim(), email: $('i_email').value.trim(), hobby: $('i_hobby').value.trim(), purpose: $('i_purpose').value.trim(), goal: $('i_goal').value.trim(), posture: $('i_body').value.trim() ? '【お客様の記入】' + $('i_body').value.trim() : '', plan: 'trial', consent: ymd(today()), isNew: true });
+    if ($('i_phoneCall').checked) c.posture += (c.posture ? '\n' : '') + '【電話での案内を希望】';
+    clients.push(c); save(); renderList();
+    $('intakeSheet').innerHTML = '<div class="eb">PERSONAL CONDITIONING SALON TONEKA</div><h1>ありがとうございました</h1><p class="lead">入力が終わりました。スタッフにお渡しください。</p><div class="out"><button class="btn ghost sm" id="btnIntakeBack2">スタッフ画面へ戻る（暗証番号が必要です）</button></div>';
+    $('btnIntakeBack2').onclick = leaveIntake;
+  }
+  function leaveIntake() {
+    askPin('スタッフ画面へ戻ります', function (v) {
+      if (hash(v) !== pinHash()) { $('pinMsg').textContent = '暗証番号が違います。'; return; }
+      closeDialog(); $('intake').hidden = true; document.body.style.overflow = ''; location.hash = '';
+      if (!$('i_name')) location.reload(); else showView('karte');
+    });
+  }
+
+  /* ---------- データ（暗号化バックアップ・復元・CSV） ---------- */
+  function b64(u) { var s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+  function unb64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function cryptoOk() { return !!(window.crypto && crypto.subtle && window.TextEncoder); }
+  function deriveKey(pass, salt) {
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']).then(function (km) {
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    });
+  }
+  function encryptText(pass, text) {
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    return deriveKey(pass, salt).then(function (k) { return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, k, new TextEncoder().encode(text)); })
+      .then(function (ct) { return 'TNK1.' + b64(salt) + '.' + b64(iv) + '.' + b64(new Uint8Array(ct)); });
+  }
+  function decryptText(pass, packed) {
+    var p = packed.trim().split('.'); if (p[0] !== 'TNK1' || p.length !== 4) return Promise.reject(new Error('形式が違います'));
+    return deriveKey(pass, unb64(p[1])).then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(p[2]) }, k, unb64(p[3])); }).then(function (b) { return new TextDecoder().decode(b); });
+  }
+  function csvText() {
+    var head = ['ID', '氏名', 'フリガナ', '性別', 'プラン', '料金', '当月残', '繰越', '回数券の期限', '同意日', '目標', '目標日'];
+    var rows = clients.map(function (c) { var e = planOf(c).kind === 'ticket' ? ticketExpire(c) : null; return [c.id, c.name, c.kana, c.gender, planOf(c).label.split('（')[0], priceOf(c) || '', c.remain || 0, carryValid(c), e ? ymd(e) : '', c.consent, c.targetLabel, c.targetDate]; });
+    return [head].concat(rows).map(function (r) { return r.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+  }
+  function fileSave(name, text) {
+    try { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+  }
+  function copyText(text, msgEl) {
+    var done = function (ok) { msgEl.className = 'msg' + (ok ? '' : ' err'); msgEl.textContent = ok ? 'コピーしました。' : 'コピーできませんでした。文字を選んでコピーしてください。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); }); else done(false);
+  }
+  function dataDialog() {
+    dialog('<h3>データ（バックアップ・復元・一覧）</h3>' +
+      '<p class="note-s">いまのデータは、<b>この端末のこのブラウザの中だけ</b>にあります。端末を替えたり、ブラウザのデータを消すと、なくなります。こまめにバックアップをとってください。</p>' +
+      '<div class="f"><label for="bkPass">バックアップの合言葉（忘れると開けません）</label><input id="bkPass" type="password" autocomplete="off"></div>' +
+      '<div class="row-b" style="justify-content:flex-start"><button class="btn sm" id="bkMake">暗号化バックアップを作る</button><button class="btn ghost sm" id="bkCsv">一覧（CSV）を作る</button></div>' +
+      '<textarea id="bkOut" aria-label="書き出した内容" placeholder="ここに書き出されます"></textarea>' +
+      '<div class="row-b" style="justify-content:flex-start"><button class="btn ghost sm" id="bkCopy">コピー</button><button class="btn ghost sm" id="bkFile">ファイルに保存</button><span class="msg" id="bkMsg" role="status"></span></div>' +
+      '<hr style="border:0;border-top:1px solid var(--line);width:100%"><div class="f"><label for="rsIn">復元：バックアップの文字をここに貼る</label><textarea id="rsIn"></textarea></div>' +
+      '<div class="row-b" style="justify-content:flex-start"><button class="btn danger sm" id="rsGo">この内容で、いまのデータを置き換える</button></div>' +
+      '<div class="row-b"><button class="btn" data-x>閉じる</button></div>', function () {
+        var msg = $('bkMsg'); var mode = '';
+        $('bkMake').onclick = function () {
+          if (!cryptoOk()) { msg.className = 'msg err'; msg.textContent = 'このブラウザでは、暗号化が使えません（https のページで開いてください）。'; return; }
+          var pw = $('bkPass').value; if (pw.length < 6) { msg.className = 'msg err'; msg.textContent = '合言葉は6文字以上にしてください。'; return; }
+          encryptText(pw, JSON.stringify(clients)).then(function (s) { $('bkOut').value = s; mode = 'backup'; msg.className = 'msg'; msg.textContent = '作りました。コピーして、安全な場所に保存してください。'; }, function () { msg.className = 'msg err'; msg.textContent = '作れませんでした。'; });
+        };
+        $('bkCsv').onclick = function () { $('bkOut').value = csvText(); mode = 'csv'; msg.className = 'msg'; msg.textContent = '一覧を作りました（個人情報を含みます。取り扱いに注意）。'; };
+        $('bkCopy').onclick = function () { copyText($('bkOut').value, msg); };
+        $('bkFile').onclick = function () { var v = $('bkOut').value; if (!v) return; fileSave(mode === 'csv' ? 'toneka-list.csv' : 'toneka-backup.txt', v); };
+        $('rsGo').onclick = function () {
+          var pw = $('bkPass').value, src = $('rsIn').value.trim();
+          if (!src) { msg.className = 'msg err'; msg.textContent = '復元する文字を貼ってください。'; return; }
+          decryptText(pw, src).then(function (txt) { var arr = JSON.parse(txt); if (!Array.isArray(arr)) throw new Error(); clients = arr; cur = 0; save(); renderList(); renderKarte(); msg.className = 'msg'; msg.textContent = '復元しました（' + arr.length + '件）。'; }, function () { msg.className = 'msg err'; msg.textContent = '復元できません。合言葉か、貼った文字を確認してください。'; });
+        };
+      });
+  }
+
+  /* ---------- 新規・デモ削除 ---------- */
+  function newClient() {
+    var c = blank(); c.id = nextId(clients); c.name = '新しい方'; c.isNew = true; clients.push(c); cur = clients.length - 1; save(); renderList(); renderKarte(); showView('karte'); $('k_name').focus(); $('k_name').select();
+  }
+  function clearDemo() {
+    dialog('<h3>デモのデータを消しますか？</h3><p class="note-s">架空の3人（山田・田中・佐藤）が消えます。あなたが入れたデータは、消えません。</p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn danger" data-ok>消して始める</button></div>', function (d) {
+      d.querySelector('[data-ok]').onclick = function () {
+        clients = clients.filter(function (c) { return !c.demo; });
+        if (!clients.length) { var c = blank(); c.id = 'TNK-0001'; c.name = '新しい方'; c.isNew = true; clients.push(c); }
+        cur = 0; save(); closeDialog(); renderList(); renderKarte();
+      };
+    });
+  }
+
+  /* ---------- 起動 ---------- */
+  function init() {
+    fillPlanSelect(); fillTypeSelect();
+    clients = load() || demoData(); if (!load()) save();
+    $('l_date').value = ymd(today());
+    /* 入力欄 → データ */
+    document.querySelectorAll('[data-k]').forEach(function (el) {
+      var ev = (el.tagName === 'SELECT' || el.type === 'date') ? 'change' : 'input';
+      el.addEventListener(ev, function () {
+        var k = el.getAttribute('data-k'), c = C(); c[k] = el.value;
+        if (k === 'plan') { var p = planOf(c); if (p.kind === 'monthly' && !c.remain && !c.carry) c.remain = p.sessions; if (p.kind === 'ticket') { if (!c.ticketDate) c.ticketDate = ymd(today()); if (!c.remain) c.remain = +c.ticketCount || 4; } renderKarte(); }
+        else if (k === 'ticketCount') { c.ticketCount = +el.value || 4; renderKarte(); }
+        else if (['name', 'hobby', 'targetDate', 'targetLabel', 'dob', 'height', 'weight', 'gender', 'ticketDate', 'referrer', 'consent'].indexOf(k) >= 0) { var pos = el.selectionStart; var id = el.id; renderKarte(); var again = $(id); if (again && document.activeElement !== again && ev === 'input') { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} } }
+        renderList(); touch();
+      });
+    });
+    document.querySelectorAll('[data-kb]').forEach(function (el) { el.addEventListener('change', function () { C()[el.getAttribute('data-kb')] = el.checked; touch(); }); });
+    document.querySelectorAll('[data-cnt]').forEach(function (b) { b.addEventListener('click', function () { var c = C(), k = b.getAttribute('data-cnt'); c[k] = Math.max(0, (c[k] || 0) + (+b.getAttribute('data-d'))); renderKarte(); renderList(); touch(); }); });
+    document.querySelectorAll('[data-pin]').forEach(function (b) { b.addEventListener('click', function () { pinColor = b.getAttribute('data-pin'); document.querySelectorAll('[data-pin]').forEach(function (x) { x.classList.toggle('on', x === b); }); }); });
+    $('stage').addEventListener('click', function (e) {
+      if (e.target.classList.contains('pin')) return;
+      var r = $('stage').getBoundingClientRect(), c = C(); c.pins = c.pins || [];
+      c.pins.push({ x: Math.round((e.clientX - r.left) / r.width * 100), y: Math.round((e.clientY - r.top) / r.height * 100), color: pinColor }); renderPins(); touch();
+    });
+    $('btnPinsClear').addEventListener('click', function () { C().pins = []; renderPins(); touch(); });
+    $('btnBase').addEventListener('click', function () { C().baseRadar = C().radar.slice(); drawRadar(); touch(); });
+    $('btnLog').addEventListener('click', addLog);
+    $('logs').addEventListener('click', function (e) { var b = e.target.closest('[data-del]'); if (b) delLog(b.getAttribute('data-del')); });
+    $('btnRoll').addEventListener('click', rollMonth);
+    $('clList').addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (b) { var c = clients[+b.getAttribute('data-i')]; openClient(+b.getAttribute('data-i')); if (c && c.isNew) { c.isNew = false; touch(); renderList(); } } });
+    $('dashBody').addEventListener('click', function (e) { var r = e.target.closest('[data-i]'); if (r) openClient(+r.getAttribute('data-i')); });
+    $('q').addEventListener('input', renderList);
+    $('btnNew').addEventListener('click', newClient);
+    $('btnData').addEventListener('click', dataDialog);
+    $('btnPin').addEventListener('click', function () { setPin(); });
+    $('btnMenu').addEventListener('click', function () { $('side').classList.toggle('open'); });
+    $('btnClearDemo').addEventListener('click', clearDemo);
+    document.querySelectorAll('.tab').forEach(function (t) { t.addEventListener('click', function () { var v = t.getAttribute('data-view'); if (v === 'intake') startIntake(); else showView(v); }); });
+    ['m_tpl', 'm_next', 'm_free'].forEach(function (id) { $(id).addEventListener('input', renderLine); });
+    $('btnCopyLine').addEventListener('click', function () { copyText(lineText(), $('copyMsg')); });
+    $('btnSubmitIntake').addEventListener('click', submitIntake);
+    $('btnIntakeBack').addEventListener('click', leaveIntake);
+    $('modal').addEventListener('click', function (e) { if (e.target === $('modal') && !$('intake').hidden === false) closeDialog(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('modal').hidden) closeDialog(); });
+    renderList(); renderKarte();
+  }
+  init();
+})();
+</script>
