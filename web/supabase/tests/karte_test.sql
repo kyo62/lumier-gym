@@ -102,5 +102,64 @@ do $$ begin
   raise notice 'OK   会員を削除しても、カルテは残り、ひもづけだけ外れる';
 end $$;
 
+\echo '--- K9. 自主トレの記録と、施術者のコメント'
+insert into auth.users (id, email) values ('99999999-0000-0000-0000-000000000009', 'gina@example.com');
+update public.profiles set consented_at = now() where email = 'gina@example.com';
+-- 同意していない会員は書けない
+insert into auth.users (id, email) values ('88888888-0000-0000-0000-000000000008', 'hal@example.com');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '88888888-0000-0000-0000-000000000008', false);
+select t.expect_error('hal(未同意)は自主トレを書けない',
+  $q$ insert into public.activity_logs (logged_on, kind) values (current_date, 'walk') $q$);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '99999999-0000-0000-0000-000000000009', false);
+insert into public.activity_logs (id, logged_on, kind, minutes, note)
+values ('aaaa0000-0000-0000-0000-00000000000a', current_date, 'walk', 30, '駅まで歩いた');
+\echo 'OK   gina は自主トレを記録できる'
+select t.expect_error('kind の不正値は不可',
+  $q$ insert into public.activity_logs (logged_on, kind) values (current_date, 'swim') $q$);
+select t.expect_error('gina はコメントを書けない（施術者だけ）',
+  $q$ insert into public.activity_comments (log_id, body) values ('aaaa0000-0000-0000-0000-00000000000a', 'x') $q$);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-000000000003', false);
+select t.expect_count('carol(施術者)は gina の記録が読める', 'select 1 from public.activity_logs', 1);
+insert into public.activity_comments (log_id, body) values ('aaaa0000-0000-0000-0000-00000000000a', 'いい歩き方でしたね！');
+\echo 'OK   carol はコメントできる'
+select t.expect_affected('carol は gina の記録を書き換えられない（0行）', $q$ update public.activity_logs set minutes = 99 $q$, 0);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '99999999-0000-0000-0000-000000000009', false);
+select t.expect_count('gina は自分の記録へのコメントが読める', 'select 1 from public.activity_comments', 1);
+update public.activity_comments set seen_at = now();
+\echo 'OK   gina はコメントを「読んだ」にできる'
+select t.expect_error('gina はコメントの本文を書き換えられない',
+  $q$ update public.activity_comments set body = '書き換え' $q$);
+select t.expect_affected('gina はコメントを削除できない（0行）', $q$ delete from public.activity_comments $q$, 0);
+reset role;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', 'ffffffff-0000-0000-0000-000000000006', false);
+select t.expect_count('frank には gina の記録が見えない',     'select 1 from public.activity_logs', 0);
+select t.expect_count('frank には gina へのコメントが見えない', 'select 1 from public.activity_comments', 0);
+reset role;
+
+set role anon;
+select t.expect_error('anon は自主トレを読めない', 'select * from public.activity_logs');
+select t.expect_error('anon はコメントを読めない', 'select * from public.activity_comments');
+reset role;
+
+delete from auth.users where email = 'gina@example.com';
+do $$ begin
+  if (select count(*) from public.activity_logs) <> 0 or (select count(*) from public.activity_comments) <> 0 then
+    raise exception 'NG   会員の削除で、自主トレ・コメントが残っている';
+  end if;
+  raise notice 'OK   会員を削除すると、自主トレとコメントも消える';
+end $$;
+
 \echo ''
 \echo '=== カルテのアクセス制御テストにも合格 ==='
