@@ -267,6 +267,15 @@ export const singlePlans: Plan[] = [
     description: '遠方の方、ご自宅から受けたい方に。',
     features: ['50分', '呼吸と姿勢のリセット', 'ご自宅の環境に合わせた提案'],
   },
+  {
+    id: 'stretch',
+    name: 'コンディショニングストレッチ',
+    price: 5500,
+    unit: '/ 回',
+    note: '店舗 45分',
+    description: 'トレーナーが体をゆっくり動かすストレッチで、関節まわりの動きやすさをサポートします。そのあと、軽く筋肉を使う運動を取り入れます。',
+    features: ['45分（ストレッチ＋軽い運動）', 'パーソナルと続けて受けることもできます（枠は120分）', '強く押す・揉む施術は行いません'],
+  },
 ];
 
 export const allPlans = [...monthlyPlans, ...singlePlans];
