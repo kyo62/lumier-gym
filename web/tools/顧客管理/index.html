@@ -398,11 +398,11 @@ tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
     { k: 'pair4', label: 'ペア 月4回（お一人 27,200円／月）', price: 27200, kind: 'monthly', sessions: 4 },
     { k: 'fam6', label: '家族割 月6回（46,200円／月・家族でシェア・繰越なし）', price: 46200, kind: 'monthly', sessions: 6, shared: true },
     { k: 'fam8', label: '家族割 月8回（61,600円／月・家族でシェア・繰越なし）', price: 61600, kind: 'monthly', sessions: 8, shared: true },
-    { k: 'ticket', label: '回数券（8,800円×回数・購入日から2か月）', price: null, kind: 'ticket' },
+    { k: 'ticket', label: '回数券（8,800円×回数・購入日から2か月）', price: null, kind: 'ticket', unit: 8800 },
+    { k: 'sticket', label: 'コンディショニングストレッチ 回数券（4回 22,000円・購入日から2か月）', price: null, kind: 'ticket', unit: 5500 },
     { k: 'visitor', label: '都度ビジター 60分（12,000円）', price: 12000, kind: 'single' },
     { k: 'online', label: 'オンライン 50分（10,000円）', price: 10000, kind: 'single' },
     { k: 'trial', label: '初回体験 60分（3,300円）', price: 3300, kind: 'single' },
-    { k: 'stretch', label: 'コンディショニングストレッチ 45分（5,500円）', price: 5500, kind: 'single' }
   ];
   var TICKET_UNIT = 8800;
   var SESSION_TYPES = [
@@ -435,7 +435,7 @@ tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
 
   /* ---------- データ ---------- */
   function planOf(c) { for (var i = 0; i < PLANS.length; i++) if (PLANS[i].k === c.plan) return PLANS[i]; return PLANS[0]; }
-  function priceOf(c) { var p = planOf(c); if (p.k === 'ticket') return TICKET_UNIT * (+c.ticketCount || 0); return p.price; }
+  function priceOf(c) { var p = planOf(c); if (p.kind === 'ticket') return (p.unit || TICKET_UNIT) * (+c.ticketCount || 0); return p.price; }
   function ticketExpire(c) { var d = parse(c.ticketDate); return d ? addMonths(d, 2) : null; }
   function carryValid(c) { if (!c.carry) return 0; var e = parse(c.carryExpire); return (e && e < today()) ? 0 : c.carry; }
   function carryDead(c) { var e = parse(c.carryExpire); return !!(c.carry && e && e < today()); }
@@ -529,7 +529,7 @@ tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
     document.querySelectorAll('[data-k]').forEach(function (el) { el.value = c[el.getAttribute('data-k')] == null ? '' : c[el.getAttribute('data-k')]; });
     document.querySelectorAll('[data-kb]').forEach(function (el) { el.checked = !!c[el.getAttribute('data-kb')]; });
     var p = planOf(c);
-    $('fTicketCount').hidden = $('fTicketDate').hidden = p.k !== 'ticket';
+    $('fTicketCount').hidden = $('fTicketDate').hidden = p.kind !== 'ticket';
     $('fShare').hidden = !(p.k === 'pair4' || p.shared);
     $('fPayer').hidden = !p.shared;
     var bmi = (+c.height > 0 && +c.weight > 0) ? ' / BMI ' + (c.weight / Math.pow(c.height / 100, 2)).toFixed(1) : '';
