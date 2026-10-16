@@ -229,9 +229,9 @@ export const monthlyPlans: Plan[] = [
   {
     id: 'monthly4',
     name: '月4回 定期コンディショニング',
-    price: 30800,
+    price: 32000,
     unit: '/ 月',
-    note: '1回あたり 7,700円',
+    note: '1回あたり 8,000円',
     description: '週1回のペースで、姿勢と不調にしっかり向き合うプラン。',
     features: ['60分 × 月4回', '姿勢の記録と経過の確認', 'セルフケアのご提案', '未消化分は翌月末まで繰り越し'],
     recommended: true,
@@ -239,9 +239,9 @@ export const monthlyPlans: Plan[] = [
   {
     id: 'monthly2',
     name: '月2回 メンテナンス',
-    price: 16000,
+    price: 17000,
     unit: '/ 月',
-    note: '1回あたり 8,000円',
+    note: '1回あたり 8,500円',
     description: '隔週のペースで、整った状態をキープするプラン。',
     features: ['60分 × 月2回', '姿勢の記録と経過の確認', '未消化分は翌月末まで繰り越し'],
   },
@@ -267,15 +267,6 @@ export const singlePlans: Plan[] = [
     description: '遠方の方、ご自宅から受けたい方に。',
     features: ['50分', '呼吸と姿勢のリセット', 'ご自宅の環境に合わせた提案'],
   },
-  {
-    id: 'pair',
-    name: 'ペア同時受講',
-    price: 7700,
-    unit: '/ 人',
-    note: '60分・2名で 15,400円',
-    description: '親子・ご夫婦・ご友人で1枠をシェアして受けられます。',
-    features: ['60分', 'お一人 7,700円'],
-  },
 ];
 
 export const allPlans = [...monthlyPlans, ...singlePlans];
@@ -296,7 +287,8 @@ export const booking = {
 
   /** 追加の割引 */
   discounts: [
-    { name: '家族割', body: 'ご家族それぞれが個別の枠で通われる場合、各月額料金から5%OFF。' },
+    { name: 'ペア月額（月4回）', body: '2名でご入会。お一人 27,200円／月（1回あたり 6,800円）。' },
+    { name: '家族割', body: 'ご家族で回数をシェアできます。月6回 43,890円／月、月8回 58,520円／月（税込）。ご家族でシェアする分、繰り越しはできません。' },
   ],
 
   /** 月額プランのサポート制度 */

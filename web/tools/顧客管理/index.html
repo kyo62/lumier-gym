@@ -393,11 +393,11 @@ tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
 
   /* ---------- 料金表（2026-10 時点のメニュー表と同じ。税込） ---------- */
   var PLANS = [
-    { k: 'm4', label: '月4回（30,800円／月）', price: 30800, kind: 'monthly', sessions: 4 },
-    { k: 'm2', label: '月2回（16,000円／月）', price: 16000, kind: 'monthly', sessions: 2 },
-    { k: 'pair4', label: 'ペア 月4回（お一人 26,400円／月）', price: 26400, kind: 'monthly', sessions: 4 },
-    { k: 'fam6', label: '家族割 月6回（50,160円／月・家族でシェア）', price: 50160, kind: 'monthly', sessions: 6, shared: true },
-    { k: 'fam8', label: '家族割 月8回（66,880円／月・家族でシェア）', price: 66880, kind: 'monthly', sessions: 8, shared: true },
+    { k: 'm4', label: '月4回（32,000円／月）', price: 32000, kind: 'monthly', sessions: 4 },
+    { k: 'm2', label: '月2回（17,000円／月）', price: 17000, kind: 'monthly', sessions: 2 },
+    { k: 'pair4', label: 'ペア 月4回（お一人 27,200円／月）', price: 27200, kind: 'monthly', sessions: 4 },
+    { k: 'fam6', label: '家族割 月6回（43,890円／月・家族でシェア・繰越なし）', price: 43890, kind: 'monthly', sessions: 6, shared: true },
+    { k: 'fam8', label: '家族割 月8回（58,520円／月・家族でシェア・繰越なし）', price: 58520, kind: 'monthly', sessions: 8, shared: true },
     { k: 'ticket', label: '回数券（8,800円×回数・購入日から2か月）', price: null, kind: 'ticket' },
     { k: 'visitor', label: '都度ビジター 60分（12,000円）', price: 12000, kind: 'single' },
     { k: 'online', label: 'オンライン 50分（10,000円）', price: 10000, kind: 'single' },
@@ -648,6 +648,9 @@ tr.row { cursor: pointer; } tr.row:hover { background: var(--sub); }
     var c = C(), p = planOf(c);
     if (p.kind !== 'monthly') { dialog('<h3>月次の締め</h3><p class="note-s">月額プランの方だけに使います。</p><div class="row-b"><button class="btn" data-x>閉じる</button></div>'); return; }
     var t = today(), exp = endOfMonth(addMonths(t, 1)), lose = carryValid(c);
+    if (p.shared) { dialog('<h3>月次の締めをします</h3><p class="note-s">家族割は、回数をご家族でシェアする分、<b>繰越ができません</b>。<br>いまの残り ' + c.remain + ' 回はなくなり、当月の枠は ' + p.sessions + ' 回に戻ります。</p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn" data-ok>締める</button></div>', function (d) {
+      d.querySelector('[data-ok]').onclick = function () { c.carry = 0; c.carryExpire = ''; c.remain = p.sessions; closeDialog(); renderKarte(); renderList(); touch(); };
+    }); return; }
     dialog('<h3>月次の締めをします</h3><p class="note-s">いまの「当月の残り ' + c.remain + ' 回」を、<b>' + jp(exp) + 'まで使える繰越</b>にします。' + (lose ? '<br>これまでの繰越 ' + lose + ' 回は、<b>なくなります</b>。' : '') + '<br>当月の枠は、' + p.sessions + ' 回に戻ります。</p><div class="row-b"><button class="btn ghost" data-x>やめる</button><button class="btn" data-ok>締める</button></div>', function (d) {
       d.querySelector('[data-ok]').onclick = function () { c.carry = c.remain; c.carryExpire = c.remain ? ymd(exp) : ''; c.remain = p.sessions; closeDialog(); renderKarte(); renderList(); touch(); };
     });
