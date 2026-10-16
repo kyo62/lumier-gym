@@ -47,6 +47,62 @@ export type WorkoutLog = {
 };
 export type WorkoutInput = Omit<WorkoutLog, 'id'>;
 
+/** 自主トレ（トレーニング・ストレッチ・歩いた日など、運動に関わる行動の記録） */
+export type ActivityKind = 'training' | 'stretch' | 'walk' | 'run' | 'other';
+export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
+  training: 'トレーニング',
+  stretch: 'ストレッチ',
+  walk: 'ウォーキング',
+  run: 'ラン',
+  other: 'その他',
+};
+export const ACTIVITY_KINDS = Object.keys(ACTIVITY_KIND_LABELS) as ActivityKind[];
+
+/** 施術者からのコメント。お客様からの返信欄はない（返事のプレッシャーをなくすため） */
+export type ActivityComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  /** お客様が読んだ日時。null なら「新着」 */
+  seenAt: string | null;
+};
+export type ActivityLog = {
+  id: string;
+  loggedOn: string;
+  kind: ActivityKind;
+  minutes: number | null;
+  note: string;
+  comments: ActivityComment[];
+};
+export type ActivityInput = Omit<ActivityLog, 'id' | 'comments'>;
+/** 施術者の画面：誰の記録か */
+export type AdminActivity = ActivityLog & { userId: string; memberName: string };
+
+/** お客様に見せるカルテの要点（見立て・内部メモ・料金・キャンセル履歴は含まれない） */
+export type MyStatus = {
+  name: string;
+  plan: string;
+  remain: number;
+  carry: number;
+  carryExpire: string | null;
+  ticketExpire: string | null;
+  targetLabel: string;
+  targetDate: string | null;
+  homework: string;
+  purpose: string;
+  goal: string;
+  hobby: string;
+  /** 最初の問診票に、お客様ご自身が書いた体の状態 */
+  intakeBody: string;
+};
+/** お客様に見せるセッションの記録 */
+export type MySession = {
+  sessionDate: string;
+  type: string;
+  menu: string;
+  homecare: string;
+};
+
 export type VideoProvider = 'youtube' | 'vimeo' | 'url';
 export type VideoVisibility = 'all' | 'assigned';
 
@@ -108,6 +164,16 @@ export interface MemberApi {
   /** 自分の記録をすべて消す（アカウントは残る） */
   deleteAllMyLogs(): Promise<void>;
 
+  /* --- 自主トレとコメント／カルテ（自分の分だけ） --- */
+  listActivities(): Promise<ActivityLog[]>;
+  addActivity(input: ActivityInput): Promise<void>;
+  deleteActivity(id: string): Promise<void>;
+  /** 自分への施術者のコメントを、すべて「読んだ」にする */
+  markCommentsSeen(): Promise<void>;
+  /** サロンがカルテをひもづけるまでは null */
+  getMyStatus(): Promise<MyStatus | null>;
+  listMySessions(): Promise<MySession[]>;
+
   /* --- 動画（見えるものだけが返る） --- */
   listVideos(): Promise<Video[]>;
   getVideo(id: string): Promise<Video | null>;
@@ -120,6 +186,9 @@ export interface MemberApi {
   adminSetAssignments(videoId: string, userIds: string[]): Promise<void>;
   adminListMembers(): Promise<MemberSummary[]>;
   adminGetMemberLogs(userId: string): Promise<MemberLogs>;
+  /** 会員の自主トレを新しい順に（コメントつき） */
+  adminListActivities(): Promise<AdminActivity[]>;
+  adminAddComment(logId: string, body: string): Promise<void>;
 }
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {

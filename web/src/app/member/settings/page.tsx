@@ -78,7 +78,7 @@ function NameCard() {
 
   return (
     <Card>
-      <h2 className="mb-4 text-base">お名前</h2>
+      <h2 className="mb-4 text-base">ニックネーム</h2>
       <form
         className="space-y-4"
         onSubmit={async (e) => {
@@ -91,7 +91,7 @@ function NameCard() {
           if (await submit.run(() => api.updateDisplayName(parsed.value))) await refresh();
         }}
       >
-        <Field label="表示名" htmlFor="display-name" hint="ホームの挨拶に使います。ニックネームでも構いません。">
+        <Field label="ニックネーム" htmlFor="display-name" hint="ホームの挨拶やコメントの宛名に使います。好きな呼び名をつけてください。">
           <input id="display-name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} autoComplete="nickname" placeholder="例：みどり" />
         </Field>
         {submit.error ? <Notice tone="error">{submit.error}</Notice> : null}

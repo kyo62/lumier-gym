@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { todayLocal, isValidDateString, formatDateJa, daysBetween, toDateString } from './dates.ts';
 import { parseVideoInput, embedUrl, directVideoUrl } from './video.ts';
-import { parseBodyForm, parseMealForm, parseWorkoutForm, normalizeCode, isPlausibleEmail } from './inputs.ts';
+import { parseBodyForm, parseMealForm, parseWorkoutForm, parseActivityForm, parseComment, normalizeCode, isPlausibleEmail } from './inputs.ts';
 import { bodySeries, latestChange, yRange, groupByDate } from './stats.ts';
 import type { BodyLog } from './types.ts';
 
@@ -136,6 +136,26 @@ describe('inputs', () => {
     assert.ok(bodyweight.ok);
     assert.equal(bodyweight.value.weightKg, null);
   });
+  test('自主トレ：種類は決まったものだけ・時間は任意の整数', () => {
+    const ok = parseActivityForm({ loggedOn: '2026-10-03', kind: 'walk', minutes: '３０', note: ' 駅まで ' });
+    assert.ok(ok.ok);
+    if (ok.ok) assert.deepEqual(ok.value, { loggedOn: '2026-10-03', kind: 'walk', minutes: 30, note: '駅まで' });
+    const noMinutes = parseActivityForm({ loggedOn: '2026-10-03', kind: 'stretch', minutes: '', note: '' });
+    assert.ok(noMinutes.ok && noMinutes.value.minutes === null);
+    assert.equal(parseActivityForm({ loggedOn: '2026-10-03', kind: 'swim', minutes: '', note: '' }).ok, false);
+    assert.equal(parseActivityForm({ loggedOn: '2026-10-03', kind: 'walk', minutes: '0', note: '' }).ok, false);
+    assert.equal(parseActivityForm({ loggedOn: '2026-10-03', kind: 'walk', minutes: '601', note: '' }).ok, false);
+    assert.equal(parseActivityForm({ loggedOn: '2026-10-03', kind: 'walk', minutes: '1.5', note: '' }).ok, false);
+    assert.equal(parseActivityForm({ loggedOn: '2026-02-30', kind: 'walk', minutes: '', note: '' }).ok, false);
+    assert.equal(parseActivityForm({ loggedOn: '2026-10-03', kind: 'walk', minutes: '', note: 'あ'.repeat(1001) }).ok, false);
+  });
+
+  test('施術者のコメント：空は不可・500文字まで', () => {
+    assert.equal(parseComment('   ').ok, false);
+    assert.equal(parseComment('あ'.repeat(501)).ok, false);
+    assert.ok(parseComment(' いい調子です ').ok);
+  });
+
   test('ログイン用コードとメール', () => {
     assert.equal(normalizeCode('123456'), '123456');
     assert.equal(normalizeCode(' 123 456 '), '123456');
@@ -327,4 +347,70 @@ describe('demoApi（本番のアクセス制御と同じ振る舞い）', async 
     await assert.rejects(() => api.listBody());
     await assert.rejects(() => api.listVideos());
   });
+
+  test('自主トレ：記録→施術者がコメント→会員が読む。会員は他人のコメントを見られず、コメントを書けない', async () => {
+    await login('alice@example.com');
+    await assert.rejects(() => api.addActivity({ loggedOn: today, kind: 'walk', minutes: 30, note: '' }), '同意前は書けない');
+    await api.consent();
+    await api.addActivity({ loggedOn: today, kind: 'walk', minutes: 30, note: '駅まで歩いた' });
+    const [log] = await api.listActivities();
+    assert.equal(log.comments.length, 0);
+    await assert.rejects(() => api.adminAddComment(log.id, 'x'), '会員はコメントを書けない');
+    await assert.rejects(() => api.adminListActivities());
+    await api.signOut();
+
+    await login('admin@example.com');
+    const all = await api.adminListActivities();
+    assert.equal(all.length, 1);
+    assert.equal(all[0].memberName, 'alice@example.com');
+    await api.adminAddComment(log.id, 'いい歩き方でしたね');
+    await api.signOut();
+
+    await login('bob@example.com');
+    await api.consent();
+    assert.equal((await api.listActivities()).length, 0, 'bob に alice の記録・コメントは見えない');
+    await api.signOut();
+
+    await login('alice@example.com');
+    const mine = await api.listActivities();
+    assert.equal(mine[0].comments.length, 1);
+    assert.equal(mine[0].comments[0].seenAt, null, '最初は新着');
+    await api.markCommentsSeen();
+    assert.ok((await api.listActivities())[0].comments[0].seenAt, '読んだことになる');
+  });
+
+  test('自主トレを削除すると、コメントも消える。他人の記録は消せない', async () => {
+    await login('alice@example.com');
+    await api.consent();
+    await api.addActivity({ loggedOn: today, kind: 'stretch', minutes: null, note: '' });
+    const id = (await api.listActivities())[0].id;
+    await api.signOut();
+    await login('admin@example.com');
+    await api.adminAddComment(id, 'こんにちは');
+    await api.signOut();
+    await login('bob@example.com');
+    await api.deleteActivity(id);
+    await api.signOut();
+    await login('alice@example.com');
+    assert.equal((await api.listActivities()).length, 1, '他人は消せない');
+    await api.deleteActivity(id);
+    assert.equal((await api.listActivities()).length, 0);
+  });
+
+  test('カルテ：デモの会員には、見せてよい項目だけが返る', async () => {
+    await login('alice@example.com');
+    const status = await api.getMyStatus();
+    assert.ok(status && status.remain >= 0);
+    assert.ok(!('posture' in status) && !('internalNote' in status) && !('referrer' in status));
+    assert.ok((await api.listMySessions()).length >= 1);
+  });
+
+  test('自分の記録をすべて削除すると、自主トレとコメントも消える', async () => {
+    await login('alice@example.com');
+    await api.consent();
+    await api.addActivity({ loggedOn: today, kind: 'run', minutes: 20, note: '' });
+    await api.deleteAllMyLogs();
+    assert.equal((await api.listActivities()).length, 0);
+  });
 });
+

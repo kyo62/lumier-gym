@@ -1,5 +1,6 @@
 import type {
-  BodyInput, BodyLog, MealInput, MealLog, MemberApi, MemberLogs, MemberSummary, Me,
+  ActivityComment, ActivityInput, ActivityLog, AdminActivity, BodyInput, BodyLog, MealInput, MealLog,
+  MemberApi, MemberLogs, MemberSummary, Me, MySession, MyStatus,
   Video, VideoInput, WorkoutInput, WorkoutLog,
 } from './types.ts';
 import { toDateString } from './dates.ts';
@@ -25,6 +26,11 @@ type Db = {
   workouts: (WorkoutLog & Owned)[];
   videos: Video[];
   assignments: { videoId: string; userId: string }[];
+  activities: (Omit<ActivityLog, 'comments'> & Owned)[];
+  comments: (ActivityComment & { logId: string })[];
+  /** サロンがひもづけたカルテの要点（会員ごと） */
+  status: Record<string, MyStatus>;
+  sessions: (MySession & { userId: string })[];
 };
 
 function newId(): string {
@@ -83,7 +89,26 @@ function seed(): Db {
       video(4, { title: '（下書き）背中の動き', category: 'ストレッチ', published: false }),
     ],
     assignments: [],
+    activities: [],
+    comments: [],
+    status: {},
+    sessions: [],
   };
+}
+
+/** デモ用：新しい会員に、カルテの要点とセッション記録のサンプルをつける */
+function sampleKarte(db: Db, userId: string) {
+  db.status[userId] = {
+    name: 'お客様', plan: 'm4', remain: 3, carry: 1, carryExpire: daysAgo(-20), ticketExpire: null,
+    targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14',
+    homework: '朝と夜に、息を吐く呼吸を3回。肩を大きく後ろに回す動きを10回。',
+    purpose: '走ったあとの肩・背中の張りが気になる', goal: '3月のレースを、楽しく走り切る',
+    hobby: 'ランニング、ヨガ', intakeBody: '肩のこわばり、息が浅い感じがする。',
+  };
+  db.sessions.push(
+    { userId, sessionDate: daysAgo(7), type: 'regular', menu: '胸まわりのストレッチ、呼吸のワーク、フォームの確認', homecare: '息を吐く呼吸を朝晩3回' },
+    { userId, sessionDate: daysAgo(14), type: 'trial', menu: 'カウンセリング、肩甲骨まわりの動きの確認', homecare: '肩を後ろに回す動き10回' },
+  );
 }
 
 /* ---- 保存と読み込み -------------------------------------------------------- */
@@ -164,6 +189,18 @@ function requireConsent(db: Db): DemoUser {
   return user;
 }
 
+/** 記録に、施術者のコメント（古い順）を付ける */
+function withComments(db: Db, log: Omit<ActivityLog, 'comments'>): ActivityLog {
+  const comments = db.comments
+    .filter((c) => c.logId === log.id)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
+    .map(({ logId, ...rest }) => {
+      void logId;
+      return rest;
+    });
+  return { ...log, comments };
+}
+
 /** 会員に見える動画（公開中で、全員向け or 自分に割り当て） */
 function visibleVideos(db: Db, userId: string): Video[] {
   const mine = new Set(db.assignments.filter((a) => a.userId === userId).map((a) => a.videoId));
@@ -204,6 +241,7 @@ export const demoApi: MemberApi = {
         if (!user.isAdmin && db.videos.some((v) => v.id === 'demo-video-2')) {
           db.assignments.push({ videoId: 'demo-video-2', userId: user.id });
         }
+        if (!user.isAdmin) sampleKarte(db, user.id);
       }
       db.session = user.id;
     });
@@ -310,7 +348,57 @@ export const demoApi: MemberApi = {
       db.body = db.body.filter((r) => r.userId !== me.id);
       db.meals = db.meals.filter((r) => r.userId !== me.id);
       db.workouts = db.workouts.filter((r) => r.userId !== me.id);
+      const mine = new Set(db.activities.filter((r) => r.userId === me.id).map((r) => r.id));
+      db.activities = db.activities.filter((r) => r.userId !== me.id);
+      db.comments = db.comments.filter((c) => !mine.has(c.logId));
     });
+  },
+
+  /* --- 自主トレとコメント／カルテ --- */
+  async listActivities() {
+    const db = load();
+    const me = currentUser(db);
+    return db.activities
+      .filter((r) => r.userId === me.id)
+      .sort(byNewest)
+      .map((r) => withComments(db, strip(r)));
+  },
+  async addActivity(input: ActivityInput) {
+    mutate((db) => {
+      const me = requireConsent(db);
+      db.activities.push({ ...input, id: newId(), userId: me.id, createdAt: new Date().toISOString() });
+    });
+  },
+  async deleteActivity(id) {
+    mutate((db) => {
+      const me = currentUser(db);
+      if (!db.activities.some((r) => r.id === id && r.userId === me.id)) return;
+      db.activities = db.activities.filter((r) => r.id !== id);
+      db.comments = db.comments.filter((c) => c.logId !== id);
+    });
+  },
+  async markCommentsSeen() {
+    mutate((db) => {
+      const me = currentUser(db);
+      const mine = new Set(db.activities.filter((r) => r.userId === me.id).map((r) => r.id));
+      const now = new Date().toISOString();
+      for (const c of db.comments) if (mine.has(c.logId) && !c.seenAt) c.seenAt = now;
+    });
+  },
+  async getMyStatus() {
+    const db = load();
+    return db.status[currentUser(db).id] ?? null;
+  },
+  async listMySessions() {
+    const db = load();
+    const me = currentUser(db);
+    return db.sessions
+      .filter((s) => s.userId === me.id)
+      .sort((a, b) => (a.sessionDate < b.sessionDate ? 1 : -1))
+      .map(({ userId, ...rest }) => {
+        void userId;
+        return rest;
+      });
   },
 
   /* --- 動画 --- */
@@ -371,6 +459,23 @@ export const demoApi: MemberApi = {
       .filter((u) => !u.isAdmin)
       .map((u) => ({ id: u.id, email: u.email, displayName: u.displayName, consentedAt: u.consentedAt }));
     return list.sort((a, b) => (a.email < b.email ? -1 : 1));
+  },
+  async adminListActivities() {
+    const db = load();
+    requireAdmin(db);
+    const list: AdminActivity[] = db.activities.sort(byNewest).map((r) => ({
+      ...withComments(db, strip(r)),
+      userId: r.userId,
+      memberName: db.users[r.userId]?.displayName || db.users[r.userId]?.email || '（不明）',
+    }));
+    return list;
+  },
+  async adminAddComment(logId, body) {
+    mutate((db) => {
+      requireAdmin(db);
+      if (!db.activities.some((r) => r.id === logId)) throw new Error('記録が見つかりません。');
+      db.comments.push({ id: newId(), logId, body, createdAt: new Date().toISOString(), seenAt: null });
+    });
   },
   async adminGetMemberLogs(userId) {
     const db = load();

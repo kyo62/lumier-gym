@@ -89,10 +89,10 @@ export function MemberApp({ children }: { children: React.ReactNode }) {
 const TABS = [
   { href: '/member', label: 'ホーム', icon: Home, match: (p: string) => p === '/member' },
   {
-    href: '/member/body',
+    href: '/member/activity',
     label: '記録',
     icon: PenLine,
-    match: (p: string) => ['/member/body', '/member/meals', '/member/workouts'].some((x) => p.startsWith(x)),
+    match: (p: string) => ['/member/activity', '/member/body', '/member/meals', '/member/workouts'].some((x) => p.startsWith(x)),
   },
   { href: '/member/videos', label: '動画', icon: PlayCircle, match: (p: string) => p.startsWith('/member/videos') },
   { href: '/member/booking', label: '予約', icon: CalendarCheck, match: (p: string) => p.startsWith('/member/booking') },

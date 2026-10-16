@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Users, Video } from 'lucide-react';
+import { ArrowRight, MessageCircle, Users, Video } from 'lucide-react';
 import { useMember } from '@/components/member/MemberApp';
 import { Card, EmptyState, Notice, PageTitle } from '@/components/member/ui';
 
@@ -10,8 +10,9 @@ export default function AdminIndexPage() {
   if (!me.isAdmin) return <EmptyState title="このページは、施術者だけが開けます" />;
 
   const items = [
+    { href: '/member/admin/activity', icon: MessageCircle, title: '自主トレへのコメント', body: '会員が記録した自主トレに、コメントを送ります。コメントがまだない記録だけを、一覧できます。' },
     { href: '/member/admin/videos', icon: Video, title: '動画の管理', body: '復習用の動画を登録します。全員に見せるか、選んだ会員だけに見せるかを決められます。' },
-    { href: '/member/admin/members', icon: Users, title: '会員の記録', body: '会員が入力した体組成・食事・トレーニングを、閲覧できます（閲覧のみ）。' },
+    { href: '/member/admin/members', icon: Users, title: '会員の記録', body: '会員が入力した体組成・食事・トレーニング・自主トレを、閲覧できます（閲覧のみ）。' },
   ];
 
   return (

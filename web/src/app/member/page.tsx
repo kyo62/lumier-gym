@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useCallback } from 'react';
-import { ArrowRight, Check, PlayCircle } from 'lucide-react';
+import { ArrowRight, Check, MessageCircle, PlayCircle } from 'lucide-react';
 import { api } from '@/lib/member/api';
-import { todayLocal } from '@/lib/member/dates';
+import { formatDateJa, todayLocal } from '@/lib/member/dates';
 import { booking } from '@/config/site';
 import { useMember } from '@/components/member/MemberApp';
 import { InstallGuide } from '@/components/member/InstallGuide';
@@ -30,6 +30,7 @@ export default function MemberHomePage() {
         <ReserveButton className="w-full">予約ページを開く</ReserveButton>
       </Card>
 
+      <KarteCard />
       <TodayCard />
       <NewVideos />
       <InstallGuide />
@@ -37,12 +38,60 @@ export default function MemberHomePage() {
   );
 }
 
+/** カルテの要点：残り回数、いちばん新しいセッション、届いたコメント */
+function KarteCard() {
+  const load = useCallback(async () => {
+    const [status, sessions, activities] = await Promise.all([api.getMyStatus(), api.listMySessions(), api.listActivities()]);
+    const fresh = activities.reduce((n, a) => n + a.comments.filter((c) => !c.seenAt).length, 0);
+    return { status, latest: sessions[0] ?? null, fresh };
+  }, []);
+  const { data, loading } = useAsync(load);
+  if (loading || !data) return null;
+  const { status, latest, fresh } = data;
+  if (!status && fresh === 0) return null;
+
+  return (
+    <Card>
+      {fresh > 0 ? (
+        <Link
+          href="/member/activity"
+          className="mb-4 flex min-h-12 items-center gap-3 rounded-xl bg-brass-soft/60 px-4 py-2 text-sm transition-colors hover:text-brass"
+        >
+          <MessageCircle size={18} strokeWidth={1.5} className="shrink-0 text-brass" aria-hidden />
+          <span className="flex-1">TONEKA からのコメントが {fresh} 件届いています</span>
+          <ArrowRight size={14} aria-hidden />
+        </Link>
+      ) : null}
+      {status ? (
+        <>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-base">カルテ</h2>
+            <Link href="/member/karte" className="text-xs text-brass underline underline-offset-4">
+              くわしく見る
+            </Link>
+          </div>
+          <p className="text-sm">
+            今月の残り <span className="tnum text-lg">{status.remain}</span> 回
+            {status.carry > 0 ? <span className="ml-3 text-xs text-muted">繰越 {status.carry} 回</span> : null}
+          </p>
+          {latest ? (
+            <p className="mt-3 text-xs leading-6 text-muted">
+              前回 {formatDateJa(latest.sessionDate)}：{latest.menu || '記録なし'}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+    </Card>
+  );
+}
+
 /** 今日の記録の状況。3種類の記録へ、すぐ移れる */
 function TodayCard() {
   const load = useCallback(async () => {
-    const [body, meals, workouts] = await Promise.all([api.listBody(), api.listMeals(), api.listWorkouts()]);
+    const [body, meals, workouts, activities] = await Promise.all([api.listBody(), api.listMeals(), api.listWorkouts(), api.listActivities()]);
     const today = todayLocal();
     return {
+      activities: activities.filter((l) => l.loggedOn === today).length,
       body: body.filter((l) => l.loggedOn === today).length,
       meals: meals.filter((l) => l.loggedOn === today).length,
       workouts: workouts.filter((l) => l.loggedOn === today).length,
@@ -51,6 +100,7 @@ function TodayCard() {
   const { data, loading } = useAsync(load);
 
   const items = [
+    { href: '/member/activity', label: '自主トレ', count: data?.activities ?? 0 },
     { href: '/member/body', label: '体組成', count: data?.body ?? 0 },
     { href: '/member/meals', label: '食事', count: data?.meals ?? 0 },
     { href: '/member/workouts', label: 'トレーニング', count: data?.workouts ?? 0 },

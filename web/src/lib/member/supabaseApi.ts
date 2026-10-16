@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  BodyInput, BodyLog, MealInput, MealLog, MealType, MemberApi, MemberLogs, MemberSummary, Me,
+  ActivityComment, ActivityInput, ActivityKind, ActivityLog, AdminActivity, BodyInput, BodyLog,
+  MealInput, MealLog, MealType, MemberApi, MemberLogs, MemberSummary, Me, MySession, MyStatus,
   Video, VideoInput, VideoProvider, VideoVisibility, WorkoutInput, WorkoutLog,
 } from './types.ts';
 
@@ -84,6 +85,27 @@ const toMeal = (r: Row): MealLog => ({
 const toWorkout = (r: Row): WorkoutLog => ({
   id: str(r.id), loggedOn: str(r.logged_on), exercise: str(r.exercise),
   weightKg: num(r.weight_kg), reps: num(r.reps), sets: num(r.sets), note: str(r.note),
+});
+const toComment = (r: Row): ActivityComment => ({
+  id: str(r.id), body: str(r.body), createdAt: str(r.created_at),
+  seenAt: typeof r.seen_at === 'string' ? r.seen_at : null,
+});
+const toActivity = (r: Row): ActivityLog => ({
+  id: str(r.id), loggedOn: str(r.logged_on), kind: str(r.kind) as ActivityKind,
+  minutes: num(r.minutes), note: str(r.note),
+  comments: (Array.isArray(r.activity_comments) ? (r.activity_comments as Row[]) : [])
+    .map(toComment)
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
+});
+const dateOrNull = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const toStatus = (r: Row): MyStatus => ({
+  name: str(r.name), plan: str(r.plan), remain: Number(r.remain ?? 0), carry: Number(r.carry ?? 0),
+  carryExpire: dateOrNull(r.carry_expire), ticketExpire: dateOrNull(r.ticket_expire),
+  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), homework: str(r.homework),
+  purpose: str(r.purpose), goal: str(r.goal), hobby: str(r.hobby), intakeBody: str(r.intake_body),
+});
+const toMySession = (r: Row): MySession => ({
+  sessionDate: str(r.session_date), type: str(r.type), menu: str(r.menu), homecare: str(r.homecare),
 });
 const toVideo = (r: Row): Video => ({
   id: str(r.id), title: str(r.title), description: str(r.description), category: str(r.category),
@@ -240,9 +262,41 @@ export const supabaseApi: MemberApi = {
     const sb = await getClient();
     const id = await sessionUserId(sb);
     // 施術者にも他人の記録は見えるが、削除できるのは自分のものだけ（RLS）。念のため user_id も指定する
-    for (const table of ['body_logs', 'meal_logs', 'workout_logs']) {
+    for (const table of ['body_logs', 'meal_logs', 'workout_logs', 'activity_logs']) {
       check(await sb.from(table).delete().eq('user_id', id));
     }
+  },
+
+  /* --- 自主トレとコメント／カルテ --- */
+  async listActivities() {
+    const sb = await getClient();
+    const rows = unwrap(
+      await sb.from('activity_logs').select('*, activity_comments(*)').order('logged_on', NEWEST_FIRST).order('created_at', NEWEST_FIRST).limit(LIMIT)
+    ) as Row[];
+    return rows.map(toActivity);
+  },
+  async addActivity(i: ActivityInput) {
+    const sb = await getClient();
+    check(await sb.from('activity_logs').insert({
+      logged_on: i.loggedOn, kind: i.kind, minutes: i.minutes, note: orNull(i.note),
+    }));
+  },
+  async deleteActivity(id) {
+    const sb = await getClient();
+    check(await sb.from('activity_logs').delete().eq('id', id));
+  },
+  async markCommentsSeen() {
+    const sb = await getClient();
+    check(await sb.from('activity_comments').update({ seen_at: new Date().toISOString() }).is('seen_at', null));
+  },
+  async getMyStatus() {
+    const sb = await getClient();
+    const rows = unwrap(await sb.rpc('my_status')) as Row[];
+    return rows.length > 0 ? toStatus(rows[0]) : null;
+  },
+  async listMySessions() {
+    const sb = await getClient();
+    return (unwrap(await sb.rpc('my_sessions')) as Row[]).map(toMySession);
   },
 
   /* --- 動画 --- */
@@ -308,6 +362,21 @@ export const supabaseApi: MemberApi = {
       consentedAt: typeof r.consented_at === 'string' ? r.consented_at : null,
     }));
     return list;
+  },
+  async adminListActivities() {
+    const sb = await getClient();
+    const rows = unwrap(
+      await sb.from('activity_logs').select('*, activity_comments(*)').order('logged_on', NEWEST_FIRST).order('created_at', NEWEST_FIRST).limit(200)
+    ) as Row[];
+    const members = new Map((await supabaseApi.adminListMembers()).map((m) => [m.id, m.displayName || m.email]));
+    const list: AdminActivity[] = rows.map((r) => ({
+      ...toActivity(r), userId: str(r.user_id), memberName: members.get(str(r.user_id)) ?? '（不明）',
+    }));
+    return list;
+  },
+  async adminAddComment(logId, body) {
+    const sb = await getClient();
+    check(await sb.from('activity_comments').insert({ log_id: logId, body }));
   },
   async adminGetMemberLogs(userId) {
     const [body, meals, workouts] = await Promise.all([

@@ -1,6 +1,6 @@
 import { isValidDateString } from './dates.ts';
-import type { BodyInput, MealInput, MealType, WorkoutInput } from './types.ts';
-import { MEAL_TYPES } from './types.ts';
+import type { ActivityInput, ActivityKind, BodyInput, MealInput, MealType, WorkoutInput } from './types.ts';
+import { ACTIVITY_KINDS, MEAL_TYPES } from './types.ts';
 
 /**
  * フォームの入力を、保存できる形に整える。
@@ -127,6 +127,28 @@ export function parseWorkoutForm(f: {
       note: note.value,
     },
   };
+}
+
+/** 自主トレの記録 */
+export function parseActivityForm(f: {
+  loggedOn: string;
+  kind: string;
+  minutes: string;
+  note: string;
+}): Result<ActivityInput> {
+  const date = readDate(f.loggedOn);
+  if (!date.ok) return date;
+  if (!ACTIVITY_KINDS.includes(f.kind as ActivityKind)) return fail('種類を選んでください。');
+  const minutes = readNumber(f.minutes, '時間（分）', 1, 600, { integer: true });
+  if (!minutes.ok) return minutes;
+  const note = readText(f.note, 'ひとこと', 1000, false);
+  if (!note.ok) return note;
+  return { ok: true, value: { loggedOn: date.value, kind: f.kind as ActivityKind, minutes: minutes.value, note: note.value } };
+}
+
+/** 施術者のコメント */
+export function parseComment(raw: string): Result<string> {
+  return readText(raw, 'コメント', 500, true);
 }
 
 /** 施術者が動画を登録するときの入力 */

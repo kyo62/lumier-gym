@@ -21,12 +21,13 @@ import { Card, ConfirmButton, EmptyState } from './ui';
 export function RecordTabs() {
   const pathname = usePathname() ?? '';
   const items = [
+    { href: '/member/activity', label: '自主トレ' },
     { href: '/member/body', label: '体組成' },
     { href: '/member/meals', label: '食事' },
     { href: '/member/workouts', label: 'トレーニング' },
   ];
   return (
-    <div role="tablist" aria-label="記録の種類" className="mb-7 grid grid-cols-3 rounded-full border border-line bg-surface p-1">
+    <div role="tablist" aria-label="記録の種類" className="mb-7 grid grid-cols-4 rounded-full border border-line bg-surface p-1">
       {items.map((item) => {
         const active = pathname.replace(/\/$/, '') === item.href;
         return (
