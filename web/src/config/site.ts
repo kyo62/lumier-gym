@@ -20,7 +20,7 @@ export const site = {
   url: 'https://example.com',
 
   /** 連絡先（=== TODO）*/
-  email: 'contact@example.com',
+  email: 'kyohei080602@gmail.com',
 
   /** 店の電話番号（070・楽天モバイル）。=== TODO: 決まったら入れる。例: '070-0000-0000'。空のあいだは表示しない */
   phone: '',
