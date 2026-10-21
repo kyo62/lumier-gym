@@ -80,14 +80,13 @@ export function ReserveCta() {
           {/* 2回目以降・会員の方：Squareの予約ページ */}
           <p className="mt-12 mb-5 text-xs tracking-wider text-muted">2回目以降・会員の方</p>
           <div>
-            <ReserveButton>オンラインで予約する</ReserveButton>
+            <ReserveButton>{booking.squareUrl ? 'オンラインで予約する' : undefined}</ReserveButton>
           </div>
 
           {!booking.squareUrl ? (
             <p className="mt-6 text-xs leading-7 text-muted">
-              {/* === TODO: Squareの予約ページを作成したら config/site.ts の booking.squareUrl に設定してください */}
-              オンライン予約ページは準備中です。
-              {site.sns.instagram ? '公開までのご予約はInstagramのDMよりお願いいたします。' : null}
+              {/* Squareの予約ページを作成したら config/site.ts の booking.squareUrl に設定すると、この表示は消えます */}
+              オンライン予約ページは準備中です。2回目以降の方も、LINEまたはお電話でご予約ください。
             </p>
           ) : null}
         </Reveal>

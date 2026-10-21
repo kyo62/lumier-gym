@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { booking } from '@/config/site';
+import { booking, site } from '@/config/site';
 
 export function Container({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn('mx-auto w-full max-w-5xl px-6', className)}>{children}</div>;
@@ -29,8 +29,8 @@ export function SectionHeading({
 
 /**
  * 予約ボタン。
- * Square の予約URLが未設定のあいだは「準備中」の見た目になり、
- * 押しても何も起きない（誤って空リンクを踏ませない）。
+ * Square の予約URLが未設定のあいだは、LINE・お電話・メールの順で、連絡の入口になる。
+ * 連絡先が1つもなければ、押せない「準備中」の見た目になる。
  */
 export function ReserveButton({
   children = 'ご予約・体験のお申し込み',
@@ -49,13 +49,32 @@ export function ReserveButton({
       : 'border border-line bg-surface text-ink hover:border-brass hover:text-brass';
 
   if (!booking.squareUrl) {
+    // 予約ページができるまでは、LINE → お電話 → メールの順で、連絡の入口にする
+    const line: string = site.sns.line;
+    const phone: string = site.phone;
+    const email: string = site.email;
+    const contact = line
+      ? { href: line, label: 'LINEでご予約・ご相談', external: true }
+      : phone
+        ? { href: `tel:${phone.replace(/[^0-9+]/g, '')}`, label: 'お電話でご予約・ご相談', external: false }
+        : email
+          ? { href: `mailto:${email}`, label: 'メールでご予約・ご相談', external: false }
+          : null;
+    if (!contact) {
+      return (
+        <span aria-disabled className={cn(base, 'cursor-not-allowed border border-dashed border-line bg-sand text-muted', className)}>
+          ご連絡先は準備中です
+        </span>
+      );
+    }
     return (
-      <span
-        aria-disabled
-        className={cn(base, 'cursor-not-allowed border border-dashed border-line bg-sand text-muted', className)}
+      <a
+        href={contact.href}
+        {...(contact.external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
+        className={cn(base, styles, className)}
       >
-        予約ページ準備中
-      </span>
+        {contact.label}
+      </a>
     );
   }
 

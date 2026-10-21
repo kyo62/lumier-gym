@@ -14,6 +14,9 @@ export const metadata: Metadata = { title: '利用規約' };
  *    事業者相談（無料）でチェックを受けてください。**
  *    詳細は ../01_Manager/会員規約_追加条項ドラフト.md を参照。
  */
+/** 規約の制定日。例: '2026年11月1日' */
+const ENACTED_ON: string = '';
+
 export default function TermsPage() {
   return (
     <LegalPage title="利用規約">
@@ -146,7 +149,8 @@ export default function TermsPage() {
         <p>本規約は必要に応じて変更することがあります。変更後の規約は、当サイトに掲載した時点から効力を生じます。</p>
       </section>
 
-      <p className="text-xs">制定日：（=== TODO: 公開日を記載）</p>
+      {/* 制定日は、専門家の確認が済んで、公開日が決まったら入れる（空のあいだは表示しない） */}
+      {ENACTED_ON ? <p className="text-xs">制定日：{ENACTED_ON}</p> : null}
     </LegalPage>
   );
 }

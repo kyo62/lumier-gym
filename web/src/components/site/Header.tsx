@@ -34,7 +34,8 @@ export function Header() {
     };
   }, [open]);
 
-  const reserveHref = booking.squareUrl || '#price';
+  // 予約ページができるまでは、ページ内の「ご予約」セクション（LINE・お電話）へ移動する
+  const reserveHref = booking.squareUrl || '#reserve';
 
   return (
     <header

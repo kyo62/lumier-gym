@@ -1,20 +1,23 @@
 # HP公開チェックリスト
 
-最終更新：2026-10-16　／　状態：**HPの中身（文言・料金・メニュー）は反映済み。公開に必要な情報と設定が残っている**
+最終更新：2026-10-21　／　状態：**https://toneka.jp で公開中**（Cloudflare Pages・公開ブランチ `claude/posture-salon-launch-rxlgl5`）
 
-## 代表の情報待ち（`web/src/config/site.ts`）
-- [ ] **電話番号（070）** → `site.phone`（空のあいだは非表示）
-- [ ] **メールアドレス** → `site.email`（いまは仮の `contact@example.com`）
-- [ ] **ドメイン** → `site.url`（`https://toneka.jp`）
-- [ ] **住所の公開範囲**／郵便番号／Googleマップ → `address`
-- [ ] **プロフィール写真**（10/20の撮影後）→ `trainer.photo`
-- [ ] **保有資格**：なし（空のままでセクションが非表示）
-- [ ] **Instagram** → `sns.instagram`
-- [ ] **Square予約URL**（審査後）→ `booking.squareUrl`
+## 完了
+- [x] 公開先：Cloudflare Pages（`toneka.jp` / `www.toneka.jp`、HTTPS）。環境変数は Pages の設定画面で管理（値はここに書かない）
+- [x] 会員ページ：Supabase につないだ（東京リージョン・サインアップ無効・メールのコード8桁・Site URL は `https://toneka.jp`）
+- [x] ログインのメール送信：Resend（送信元 `noreply@toneka.jp`）
+- [x] 受信：`info@toneka.jp` → 代表のメールに転送（Cloudflare Email Routing。受信テスト済み）
+- [x] 連絡先・住所・営業日・プロフィール写真を `site.ts` に反映
+- [x] 検索に出す設定（`NEXT_PUBLIC_NOINDEX` を削除済み）
+- [x] 2026-10-21：地図の欄に設定用の文言が出ていたのを、住所＋「Googleマップで見る」に変更／「予約ページ準備中」を、LINE（なければお電話・メール）の入口に変更／営業日の注記の確認先を「LINEまたはお電話」に／ヒーローの営業欄を「火・水・土・日／水・土は隔週」に／初回体験（60分・3,300円）を「初めての方」に追記／利用規約の「制定日」の未記入の文言を非表示に
 
-## 設定・確認
-- [ ] Cloudflare Pages への公開。公開できたら `vercel.json` を削除し、`NEXT_PUBLIC_NOINDEX` を外す
-- [ ] 利用規約・プライバシーポリシーの専門家確認（公開日の記載も）
-- [ ] 保健所への確認（任意・おすすめ）→ [`保健所への確認メモ.md`](../01_Manager/保健所への確認メモ.md)
-- [ ] 回数券（パーソナル・ストレッチ）をHPに載せるか
-- [ ] 公開前の最終確認（代表）
+## 未完了
+- [ ] **Squareの予約URL**（審査後）→ `booking.squareUrl`。入れると、予約ボタンと注記の文言が自動で「予約ページ」に切り替わる
+- [ ] **埋め込み地図のURL** → `address.mapEmbedUrl`（なくても、住所とリンクは出る）
+- [ ] **ヒーロー見出し**：「がんばる前に、まず整える。」を、読点なしの1行にするか（代表の確認待ち）
+- [ ] 保有資格（なし）／Instagram URL（未登録）
+- [ ] **利用規約・プライバシーポリシーの専門家確認**と、規約の制定日（`terms/page.tsx` の `ENACTED_ON`）。**すでに検索に出る状態なので、早めに**
+- [ ] 保健所への確認（ストレッチ）→ [`保健所への確認メモ.md`](../01_Manager/保健所への確認メモ.md)
+- [ ] Google Search Console の登録（`https://toneka.jp/sitemap.xml` を送信）、Google ビジネスプロフィール
+- [ ] `info@` から返信（送信）する設定
+- [ ] 公開ブランチを `main` に切り替えるか（急ぎではない）。ルートの `vercel.json` の削除

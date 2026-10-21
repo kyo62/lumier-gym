@@ -64,14 +64,26 @@ export function Access() {
                 className="h-full min-h-[300px] w-full rounded-lg border border-line"
               />
             ) : (
-              /* Googleマップの「共有」→「地図を埋め込む」で得られる src を
-                 config/site.ts の address.mapEmbedUrl に設定すると地図が表示されます */
-              <div className="flex h-full min-h-[300px] items-center justify-center rounded-lg border border-dashed border-line bg-surface px-6 text-center text-[11px] leading-6 text-muted">
-                地図（config/site.ts の
-                <br />
-                address.mapEmbedUrl に
-                <br />
-                Googleマップの埋め込みURLを設定）
+              /* 埋め込み地図のURLができるまでは、住所と「Googleマップで見る」リンクだけを出す。
+                 config/site.ts の address.mapEmbedUrl に設定すると、地図が表示される */
+              <div className="flex h-full min-h-[300px] flex-col items-center justify-center rounded-lg border border-line bg-surface px-6 py-10 text-center">
+                <p className="text-sm leading-7">
+                  〒{site.address.postalCode}
+                  <br />
+                  {site.address.prefecture}
+                  {site.address.city}
+                  {site.address.street}
+                </p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${site.address.prefecture}${site.address.city}${site.address.street}`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-5 inline-flex items-center rounded-full border border-line bg-canvas px-6 py-2.5 text-xs tracking-wider transition-colors hover:border-brass hover:text-brass"
+                >
+                  Googleマップで見る
+                </a>
               </div>
             )}
           </Reveal>
