@@ -72,9 +72,12 @@ href={site.sns.line}
 target="_blank"
 rel="noreferrer noopener"
 aria-label="公式LINE"
-className="inline-flex h-10 px-4 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
+className="inline-flex h-10 items-center justify-center text-canvas/80 transition-colors hover:text-canvas"
 >
-<span className="text-[11px] font-medium tracking-wider">LINE</span>
+<svg width="46" height="40" viewBox="0 0 46 40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+<path d="M23 3C12.5 3 4 9.7 4 18c0 5 3 9.3 7.8 12.1L10 37l7.6-4.2c1.7.4 3.5.6 5.4.6 10.5 0 19-6.7 19-15S33.5 3 23 3z" />
+<text x="23" y="21.5" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="currentColor" stroke="none" letterSpacing="0.4">LINE</text>
+</svg>
 </a>
 ) : null}
 </div>
