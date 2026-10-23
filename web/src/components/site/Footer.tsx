@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, MessageCircle } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Container } from './primitives';
 import { site, booking } from '@/config/site';
 
@@ -72,9 +72,9 @@ href={site.sns.line}
 target="_blank"
 rel="noreferrer noopener"
 aria-label="公式LINE"
-className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
+className="inline-flex h-10 px-4 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
 >
-<MessageCircle size={18} strokeWidth={1.6} aria-hidden />
+<span className="text-[11px] font-medium tracking-wider">LINE</span>
 </a>
 ) : null}
 </div>
