@@ -77,7 +77,7 @@ export function Hero() {
               <dt className="text-[10px] tracking-[0.2em] text-muted">{stat.label}</dt>
               <dd className="mt-2 font-serif text-lg text-ink">
                 {stat.value}
-                <span className="ml-2 text-[11px] text-muted tnum">{stat.unit}</span>
+                <span className="ml-2 inline-block whitespace-nowrap text-[11px] text-muted tnum">{stat.unit}</span>
               </dd>
             </div>
           ))}

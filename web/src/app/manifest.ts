@@ -6,7 +6,7 @@ export const dynamic = 'force-static';
 
 /**
  * 「ホーム画面に追加」したときの、アプリとしての設定。
- * 開く先は会員ページ。アイコンは仮のもの（ロゴが決まったら public/icons/ を差し替える）。
+ * 開く先は会員ページ。アイコンは、D-2ロゴのシンボル（2026-10-23）。
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {

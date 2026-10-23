@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 import { site, booking } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -45,7 +46,8 @@ export function Header() {
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:h-18">
-        <Link href="/" className="flex items-baseline gap-2" onClick={() => setOpen(false)}>
+        <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)} aria-label={`${site.name} トップへ`}>
+          <Image src="/brand/d2-symbol.svg" alt="" width={32} height={32} className="h-8 w-8" priority />
           <span className="font-serif text-lg tracking-[0.22em]">{site.name}</span>
           <span className="hidden text-[10px] tracking-[0.2em] text-muted sm:inline">{site.nameKana}</span>
         </Link>

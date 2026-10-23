@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { Container } from './primitives';
 import { site, booking } from '@/config/site';
@@ -9,6 +10,7 @@ export function Footer() {
       <Container>
         <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
+            <Image src="/brand/d2-symbol-dark.svg" alt="" width={44} height={44} className="mb-4 h-11 w-11" />
             <p className="font-serif text-xl tracking-[0.22em]">{site.name}</p>
             <p className="mt-1.5 text-[10px] tracking-[0.25em] text-canvas/50">{site.nameKana}</p>
             <p className="mt-5 text-xs leading-7 text-canvas/60">
