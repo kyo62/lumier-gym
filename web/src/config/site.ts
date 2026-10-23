@@ -42,6 +42,7 @@ export const site = {
   sns: {
     instagram: 'https://www.instagram.com/toneka_fitness/',
     line: 'https://lin.ee/rVyfqRH',
+  youtube: 'https://www.youtube.com/@kyohei_style_diet',
   },
 } as const;
 
