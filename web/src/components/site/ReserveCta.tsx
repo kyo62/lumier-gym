@@ -86,7 +86,7 @@ export function ReserveCta() {
           {!booking.squareUrl ? (
             <p className="mt-6 text-xs leading-7 text-muted">
               {/* Squareの予約ページを作成したら config/site.ts の booking.squareUrl に設定すると、この表示は消えます */}
-              オンライン予約ページは準備中です。2回目以降の方も、LINEまたはお電話でご予約ください。
+              2回目以降の方も、LINEまたはお電話でご予約ください。
             </p>
           ) : null}
         </Reveal>
