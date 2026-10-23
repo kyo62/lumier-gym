@@ -63,7 +63,7 @@ export function Profile() {
 {row.items.map((item) => (
 <li key={item} className="flex gap-2">
 <span aria-hidden className="text-brass">・</span>
-<span>{item}</span>
+<span className="whitespace-pre-line">{item}</span>
 </li>
 ))}
 </ul>
