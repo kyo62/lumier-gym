@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, MessageCircle } from 'lucide-react';
 import { Container } from './primitives';
 import { site, booking } from '@/config/site';
 
@@ -49,17 +49,36 @@ export function Footer() {
           </nav>
         </div>
 
-        {site.sns.instagram ? (
-          <a
-            href={site.sns.instagram}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="mt-10 inline-flex items-center gap-1.5 text-xs text-canvas/70 transition-colors hover:text-canvas"
-          >
-            Instagram
-            <ArrowUpRight size={12} aria-hidden />
-          </a>
-        ) : null}
+        {site.sns.instagram || site.sns.line ? (
+<div className="mt-10 flex items-center gap-3">
+{site.sns.instagram ? (
+<a
+href={site.sns.instagram}
+target="_blank"
+rel="noreferrer noopener"
+aria-label="Instagram"
+className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
+>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+<rect x="3" y="3" width="18" height="18" rx="5" />
+<circle cx="12" cy="12" r="4" />
+<circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+</svg>
+</a>
+) : null}
+{site.sns.line ? (
+<a
+href={site.sns.line}
+target="_blank"
+rel="noreferrer noopener"
+aria-label="公式LINE"
+className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
+>
+<MessageCircle size={18} strokeWidth={1.6} aria-hidden />
+</a>
+) : null}
+</div>
+) : null}
 
         <p className="mt-12 border-t border-canvas/15 pt-6 text-[11px] text-canvas/40">
           © {new Date().getFullYear()} {site.name}
