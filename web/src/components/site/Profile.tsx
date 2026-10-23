@@ -52,7 +52,28 @@ export function Profile() {
               ))}
             </div>
 
-            {profile.credentials.length > 0 ? (
+            {profile.career.length > 0 ? (
+<div className="mt-12">
+<p className="text-[11px] tracking-[0.3em] text-brass uppercase">Career</p>
+<ol className="mt-5 divide-y divide-line border-y border-line">
+{profile.career.map((row) => (
+<li key={row.year} className="grid grid-cols-[4.5rem_1fr] gap-4 py-5 sm:grid-cols-[5.5rem_1fr]">
+<p className="font-serif text-base tnum">{row.year}</p>
+<ul className="space-y-1.5 text-sm leading-7 text-muted">
+{row.items.map((item) => (
+<li key={item} className="flex gap-2">
+<span aria-hidden className="text-brass">・</span>
+<span>{item}</span>
+</li>
+))}
+</ul>
+</li>
+))}
+</ol>
+</div>
+) : null}
+
+{profile.credentials.length > 0 ? (
               <div className="mt-10 rounded-lg border border-line bg-surface p-6">
                 <p className="text-[11px] tracking-[0.3em] text-brass uppercase">Credentials</p>
                 <ul className="mt-4 space-y-2 text-sm text-muted">
