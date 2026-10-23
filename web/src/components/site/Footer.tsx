@@ -49,7 +49,7 @@ export function Footer() {
           </nav>
         </div>
 
-        {site.sns.instagram || site.sns.line ? (
+        {site.sns.instagram || site.sns.line || site.sns.youtube ? (
 <div className="mt-10 flex items-center gap-3">
 {site.sns.instagram ? (
 <a
@@ -72,11 +72,25 @@ href={site.sns.line}
 target="_blank"
 rel="noreferrer noopener"
 aria-label="公式LINE"
-className="inline-flex h-10 items-center justify-center text-canvas/80 transition-colors hover:text-canvas"
+className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
 >
-<svg width="46" height="40" viewBox="0 0 46 40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+<svg width="22" height="19" viewBox="0 0 46 40" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
 <path d="M23 3C12.5 3 4 9.7 4 18c0 5 3 9.3 7.8 12.1L10 37l7.6-4.2c1.7.4 3.5.6 5.4.6 10.5 0 19-6.7 19-15S33.5 3 23 3z" />
-<text x="23" y="21.5" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="currentColor" stroke="none" letterSpacing="0.4">LINE</text>
+<text x="23" y="21.5" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor" stroke="none">LINE</text>
+</svg>
+</a>
+) : null}
+{site.sns.youtube ? (
+<a
+href={site.sns.youtube}
+target="_blank"
+rel="noreferrer noopener"
+aria-label="YouTube"
+className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-canvas/25 text-canvas/80 transition-colors hover:border-canvas hover:text-canvas"
+>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+<rect x="2.5" y="5.5" width="19" height="13" rx="4" />
+<path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" />
 </svg>
 </a>
 ) : null}
