@@ -40,7 +40,7 @@ export const site = {
   },
 
   sns: {
-    instagram: '',
+    instagram: 'https://www.instagram.com/toneka_fitness/',
     line: 'https://lin.ee/SzuoyPd',
   },
 } as const;
