@@ -19,7 +19,7 @@ export function Reasons() {
                 </div>
                 <div>
                   <h3 className="text-lg leading-relaxed">{reason.title}</h3>
-                  <p className="mt-4 text-sm leading-8 text-muted">{reason.body}</p>
+                  <p className="mt-4 whitespace-pre-line text-sm leading-8 text-muted [text-wrap:pretty]">{reason.body}</p>
                 </div>
               </Reveal>
             </li>
