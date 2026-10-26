@@ -41,7 +41,7 @@ export function Hero() {
 
         <h1 className="text-[2rem] leading-[1.6] sm:text-[3.25rem] sm:leading-[1.5]">
           {headline.map((line, i) => (
-            <span key={line} className="block">
+            <span key={line} className="block sm:inline">
               {withAccent(line, headlineAccent)}
               {i < headline.length - 1 ? null : null}
             </span>
@@ -49,11 +49,8 @@ export function Hero() {
         </h1>
 
         <p className="mt-10 max-w-xl text-sm leading-9 text-muted sm:text-base">
-          {lead.map((line, i) => (
-            <span key={line}>
-              {line}
-              {i < lead.length - 1 ? <br className="hidden sm:block" /> : null}
-            </span>
+          {lead.map((line) => (
+            <span key={line} className="block">{line}</span>
           ))}
         </p>
 
