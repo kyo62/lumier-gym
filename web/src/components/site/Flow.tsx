@@ -26,7 +26,7 @@ export function Flow() {
               </span>
               <Reveal delay={i * 70} className="flex-1 pt-1.5">
                 <h3 className="text-base">{step.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-muted">{step.body}</p>
+                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted [text-wrap:pretty]">{step.body}</p>
               </Reveal>
             </li>
           ))}
