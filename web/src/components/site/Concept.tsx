@@ -40,7 +40,7 @@ export function Concept() {
           <p className="mt-4 font-serif text-base text-brass">{brand.originTitle}</p>
           <div className="mt-5 space-y-2 text-sm leading-8 text-muted">
             {brand.originBody.map((line) => (
-              <p key={line}>{line}</p>
+              <p key={line} className="whitespace-pre-line">{line}</p>
             ))}
           </div>
         </Reveal>
