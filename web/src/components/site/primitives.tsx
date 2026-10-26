@@ -22,7 +22,7 @@ export function SectionHeading({
     <div className={cn('max-w-2xl', align === 'center' ? 'mx-auto text-center' : 'text-left')}>
       <p className="mb-5 text-[11px] tracking-[0.3em] text-brass uppercase">{eyebrow}</p>
       <h2 className="text-2xl leading-[1.7] sm:text-[1.75rem]">{title}</h2>
-      {lead ? <p className="mt-6 text-sm leading-8 text-muted">{lead}</p> : null}
+      {lead ? <p className="mt-6 whitespace-pre-line text-sm leading-8 text-muted">{lead}</p> : null}
     </div>
   );
 }
