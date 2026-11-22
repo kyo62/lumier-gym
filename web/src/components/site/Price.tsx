@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 import { Container, SectionHeading, ReserveButton } from './primitives';
 import { Reveal } from './Reveal';
-import { monthlyPlans, singlePlans, booking, sections, type Plan } from '@/config/site';
+import { ticketPlans, singlePlans, booking, sections, type Plan } from '@/config/site';
 import { yen } from '@/lib/utils';
 
 function PlanCard({
@@ -27,7 +27,7 @@ function PlanCard({
             plan.recommended ? '' : 'invisible'
           }`}
         >
-          いちばん選ばれています
+          おすすめ
         </span>
       ) : null}
 
@@ -66,11 +66,11 @@ export function Price() {
           <p className="mx-auto mt-2 max-w-2xl text-center text-[11px] leading-6 text-muted">{sections.price.medicalNotice}</p>
         </Reveal>
 
-        {/* 月額プラン */}
+        {/* 回数券 */}
         <Reveal className="mt-14">
-          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">{sections.price.monthlyLabel}</p>
-          <div className="grid gap-6 md:grid-cols-2">
-            {monthlyPlans.map((plan) => (
+          <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">{sections.price.ticketLabel}</p>
+          <div className="grid gap-6 md:grid-cols-3">
+            {ticketPlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} featured={plan.recommended} badgeSlot />
             ))}
           </div>
@@ -79,11 +79,12 @@ export function Price() {
         {/* 単発プラン */}
         <Reveal delay={80} className="mt-12">
           <p className="mb-6 text-center text-xs tracking-[0.2em] text-muted">{sections.price.singleLabel}</p>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="mx-auto max-w-md">
             {singlePlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} />
             ))}
           </div>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-[11px] leading-6 text-muted">{sections.price.otherNotice}</p>
         </Reveal>
 
         {/* サポート制度・割引 */}
