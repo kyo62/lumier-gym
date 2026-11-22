@@ -37,7 +37,7 @@ export const site = {
       'お車の方は近隣のコインパーキングをご利用ください',
     ],
     /** === TODO: Googleマップの「共有」→「地図を埋め込む」で得られる src */
-    mapEmbedUrl: '',
+    mapEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3260.6791079536465!2d136.9102665!3d35.1895497!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6003711c79a3656f%3A0x613adaa59f66ea25!2sTONEKA!5e0!3m2!1sja!2sjp!4v1795344663021!5m2!1sja!2sjp',
   },
 
   sns: {
@@ -285,8 +285,9 @@ export const ticketPlans: Plan[] = [
     price: 35200,
     unit: '/ 4回',
     note: '1回あたり 8,800円',
-    description: '月1回のペースで、姿勢と呼吸にじっくり向き合うプラン。',
+    description: '姿勢と呼吸にじっくり向き合うプラン。',
     features: ['60分 × 4回', '姿勢の記録と経過の確認', 'セルフケアのご提案', '購入日から3か月有効'],
+    recommended: true,
   },
   {
     id: 'ticket8',
@@ -294,9 +295,8 @@ export const ticketPlans: Plan[] = [
     price: 65600,
     unit: '/ 8回',
     note: '1回あたり 8,200円',
-    description: '月2回のペースで、整った状態をつくっていくプラン。',
+    description: '整った状態をつくっていくプラン。',
     features: ['60分 × 8回', '姿勢の記録と経過の確認', 'セルフケアのご提案', '購入日から4か月有効'],
-    recommended: true,
   },
 ];
 
