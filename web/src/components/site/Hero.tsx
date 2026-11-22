@@ -66,7 +66,7 @@ export function Hero() {
 
         <dl className="mt-16 grid max-w-2xl grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-3">
           {[
-            { label: 'アクセス', value: '名城公園駅', unit: '徒歩すぐ' },
+            { label: 'アクセス', value: '名城公園駅', unit: '徒歩すぐ', sub: '名鉄瀬戸線「清水」駅からも歩けます' },
             { label: 'プライバシー', value: '完全個室', unit: '1対1' },
             { label: '営業', value: businessHours.days, unit: businessHours.hours },
           ].map((stat) => (
@@ -76,6 +76,7 @@ export function Hero() {
                 {stat.value}
                 <span className="ml-2 inline-block whitespace-nowrap text-[11px] text-muted tnum">{stat.unit}</span>
               </dd>
+            {'sub' in stat && stat.sub ? <p className="mt-1.5 text-[11px] leading-5 text-muted">{stat.sub}</p> : null}
             </div>
           ))}
         </dl>
