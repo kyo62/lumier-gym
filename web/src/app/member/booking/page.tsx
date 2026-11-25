@@ -6,20 +6,19 @@ import { Card, PageTitle } from '@/components/member/ui';
 import { ReserveButton } from '@/components/site/primitives';
 
 /**
- * 予約は Square の予約ページで行う（決済・リマインドまで一体で動くため、自作しない）。
- * ここは、そこへ送り出す案内のページ。予約URLは site.ts の booking.squareUrl で設定する。
+ * 予約は、Square の予約ページ（booking.squareUrl）が設定されていればそちら、なければ LINE・電話・メールへ（ReserveButton が切り替える）。
  */
 export default function BookingPage() {
   return (
     <div className="space-y-6">
-      <PageTitle eyebrow="Reservation" title="ご予約" lead="ご予約と変更は、予約ページ（Square）で行います。" />
+      <PageTitle eyebrow="Reservation" title="ご予約" lead="ご予約と変更は、こちらからご連絡ください。" />
 
       <Card className="text-center">
         <span className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-brass-soft text-brass" aria-hidden>
           <CalendarCheck size={26} strokeWidth={1.5} />
         </span>
-        <p className="mb-6 text-sm leading-7">空いている日時から、お好きな枠を選んでご予約いただけます。</p>
-        <ReserveButton className="w-full">予約ページを開く</ReserveButton>
+        <p className="mb-6 text-sm leading-7">ご希望の日時を、LINEまたはお電話でお知らせください。</p>
+        <ReserveButton className="w-full">ご予約はこちら</ReserveButton>
       </Card>
 
       <Card>
@@ -28,7 +27,7 @@ export default function BookingPage() {
       </Card>
 
       <Card>
-        <h2 className="mb-4 text-base">月額プランのサポート</h2>
+        <h2 className="mb-4 text-base">回数券について</h2>
         <ul className="space-y-4">
           {booking.support.map((s) => (
             <li key={s.title} className="text-sm leading-7">

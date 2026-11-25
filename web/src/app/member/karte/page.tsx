@@ -2,7 +2,9 @@
 
 import { api } from '@/lib/member/api';
 import { formatDateFullJa, formatDateJa } from '@/lib/member/dates';
-import { PLAN_LABELS, SESSION_TYPE_LABELS } from '@/lib/member/karte';
+import { SESSION_TYPE_LABELS } from '@/lib/member/karte';
+import { EXPIRING_DAYS, daysLeft } from '@/lib/member/karteRules';
+import { todayLocal } from '@/lib/member/dates';
 import { Card, EmptyState, Loading, Notice, PageTitle, useAsync } from '@/components/member/ui';
 
 export default function KartePage() {
@@ -22,28 +24,35 @@ export default function KartePage() {
     );
   }
 
-  const counts: { label: string; value: string; sub?: string }[] = [
-    { label: '今月の残り', value: `${s.remain}回` },
-    ...(s.carry > 0 ? [{ label: '繰越', value: `${s.carry}回`, sub: s.carryExpire ? `${formatDateJa(s.carryExpire)}まで` : undefined }] : []),
-    ...(s.ticketExpire ? [{ label: '回数券の期限', value: formatDateJa(s.ticketExpire) }] : []),
-    ...(s.stretchRemain > 0 ? [{ label: 'ストレッチ回数券', value: `${s.stretchRemain}回`, sub: s.stretchExpire ? `${formatDateJa(s.stretchExpire)}まで` : undefined }] : []),
-  ];
+  const today = todayLocal();
 
   return (
     <div className="space-y-6">
-      <PageTitle eyebrow="Karte" title="カルテ" lead={`ご利用プラン：${PLAN_LABELS[s.plan] ?? s.plan}`} />
+      <PageTitle eyebrow="Karte" title="カルテ" />
 
       <Card>
-        <h2 className="mb-4 text-base">回数</h2>
-        <ul className="grid grid-cols-2 gap-3">
-          {counts.map((c) => (
-            <li key={c.label} className="rounded-xl bg-sand/60 px-4 py-3">
-              <p className="text-[11px] tracking-wider text-muted">{c.label}</p>
-              <p className="tnum mt-1 text-lg">{c.value}</p>
-              {c.sub ? <p className="mt-0.5 text-[11px] text-muted">{c.sub}</p> : null}
-            </li>
-          ))}
-        </ul>
+        <h2 className="mb-4 text-base">回数券</h2>
+        {s.tickets.length === 0 ? (
+          <p className="text-sm leading-7 text-muted">いま使える回数券はありません。ご希望の際は、LINEまたはお電話でお知らせください。</p>
+        ) : (
+          <ul className="space-y-3">
+            {s.tickets.map((t) => {
+              const d = daysLeft(t, today);
+              const soon = d !== null && d <= EXPIRING_DAYS;
+              return (
+                <li key={t.id} className="rounded-xl bg-sand/60 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-sm">{t.label}<span className="ml-2 text-[11px] text-muted">{t.minutes}分</span></p>
+                    <p className="tnum text-lg">{t.remain}<span className="ml-1 text-xs text-muted">/ {t.total} 回</span></p>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted">{t.expiresOn ? `${formatDateJa(t.expiresOn)}まで` : '期限なし'}</p>
+                  {soon ? <p className="mt-2 text-xs leading-6 text-ink">期限が近づいています（あと{d}日）。ご予約はお早めにどうぞ。</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="mt-3 text-[11px] leading-5 text-muted">期限を過ぎた回数券は、お使いいただけません。回数は、期限の近い券から使います。</p>
       </Card>
 
       {s.targetLabel || s.goal ? (

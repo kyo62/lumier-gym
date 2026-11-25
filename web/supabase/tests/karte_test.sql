@@ -14,12 +14,16 @@ update public.profiles set consented_at = now() where email in ('erin@example.co
 \echo '--- K1. 施術者(carol)はカルテを作れる'
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-000000000003', false);
-insert into public.clients (id, code, name, plan, remain, carry, carry_expire, homework, radar, posture, referrer, internal_note, ticket_date)
+insert into public.clients (id, code, name, homework, radar, posture, referrer, internal_note)
 values
- ('11111111-1111-1111-1111-111111111111', 'TNK-0001', '山田 花子', 'm4', 3, 1, current_date + 10,
-  '肩を回す', '{"呼吸":3}', '【見立て】巻き肩', '紹介者A', '内部メモ', null),
- ('22222222-2222-2222-2222-222222222222', 'TNK-0002', '田中 みどり', 'ticket', 2, 0, null,
-  null, '{}', null, null, null, current_date - 20);
+ ('11111111-1111-1111-1111-111111111111', 'TNK-0001', '山田 花子', '肩を回す', '{"呼吸":3}', '【見立て】巻き肩', '紹介者A', '内部メモ'),
+ ('22222222-2222-2222-2222-222222222222', 'TNK-0002', '田中 みどり', null, '{}', null, null, null);
+insert into public.tickets (id, client_id, kind, label, total, remain, minutes, purchased_on, expires_on)
+values
+ ('aaaaaaaa-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 't4', '4回券', 4, 3, 60, current_date - 20, current_date + 70),
+ ('aaaaaaaa-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 't2', '2回券（30分）', 2, 1, 30, current_date - 70, current_date - 10),
+ ('aaaaaaaa-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'other', 'オンライン回数券', 3, 0, 60, current_date - 5, null),
+ ('bbbbbbbb-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 't8', '8回券', 8, 2, 60, current_date - 20, current_date + 100);
 insert into public.sessions (client_id, session_date, type, status, menu, homecare, condition, fee)
 values
  ('11111111-1111-1111-1111-111111111111', current_date - 7, 'regular', 'attended', '胸まわりのストレッチ', '呼吸を1日3回', '内部の状態メモ', 0),
@@ -41,7 +45,11 @@ select t.expect_count('erin は clients が見えない',  'select 1 from public
 select t.expect_count('erin は sessions が見えない', 'select 1 from public.sessions', 0);
 select t.expect_error('erin は clients を書けない',
   $q$ insert into public.clients (code, name) values ('TNK-9999', 'x') $q$);
-select t.expect_affected('erin は残り回数を書き換えられない（0行）', $q$ update public.clients set remain = 99 $q$, 0);
+select t.expect_affected('erin は残り回数を書き換えられない（0行）', $q$ update public.clients set homework = '書き換え' $q$, 0);
+select t.expect_count('erin は tickets が見えない', 'select 1 from public.tickets', 0);
+select t.expect_error('erin は tickets を書けない',
+  $q$ insert into public.tickets (client_id, kind, label, total, remain) values ('11111111-1111-1111-1111-111111111111', 't4', 'x', 4, 4) $q$);
+select t.expect_affected('erin は券の残りを書き換えられない（0行）', $q$ update public.tickets set remain = 99 $q$, 0);
 select t.expect_error('erin は link_client を使えない',
   $q$ select public.link_client('22222222-2222-2222-2222-222222222222', 'erin@example.com') $q$);
 reset role;
@@ -50,14 +58,18 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'eeeeeeee-0000-0000-0000-000000000005', false);
 select t.expect_count('erin の my_status は1行', 'select * from public.my_status()', 1);
-select t.expect_count('erin の my_status は山田さんの分', $q$select 1 from public.my_status() where name = '山田 花子' and remain = 3 and carry = 1 and homework = '肩を回す'$q$, 1);
+select t.expect_count('erin の my_status は山田さんの分', $q$select 1 from public.my_status() where name = '山田 花子' and homework = '肩を回す'$q$, 1);
+select t.expect_count('会員に渡る券は、使えるものだけ（期限切れ・残り0は出ない）', $q$select 1 from public.my_status() s, jsonb_array_elements(s.tickets) t where t->>'label' = '4回券'$q$, 1);
+select t.expect_count('期限切れの券は出ない', $q$select 1 from public.my_status() s, jsonb_array_elements(s.tickets) t where t->>'kind' = 't2'$q$, 0);
+select t.expect_count('残り0の券は出ない', $q$select 1 from public.my_status() s, jsonb_array_elements(s.tickets) t where t->>'kind' = 'other'$q$, 0);
+select t.expect_count('他の人の券は混ざらない', $q$select 1 from public.my_status() s, jsonb_array_elements(s.tickets) t where t->>'kind' = 't8'$q$, 0);
 select t.expect_count('erin の my_sessions は、来店した1件だけ（無断キャンセルは出ない）', 'select * from public.my_sessions()', 1);
 select t.expect_count('メニューは見える', $q$select 1 from public.my_sessions() where menu = '胸まわりのストレッチ' and homecare = '呼吸を1日3回'$q$, 1);
 do $$ begin
   -- 関数の戻り列に、内部項目が含まれていないこと
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
              where n.nspname = 'public' and p.proname in ('my_status', 'my_sessions')
-               and pg_get_function_result(p.oid) ~ '(posture|referrer|internal_note|condition|fee|amount|phone|email|body_pins)') then
+               and pg_get_function_result(p.oid) ~ '(posture|referrer|internal_note|condition|fee|amount|phone|email|body_pins|consumed)') then
     raise exception 'NG   会員向け関数に内部項目が含まれている';
   end if;
   raise notice 'OK   会員向け関数の戻り列に、見立て・紹介者・内部メモ・料金などは含まれない';
@@ -78,11 +90,11 @@ select set_config('request.jwt.claim.sub', 'eeeeeeee-0000-0000-0000-000000000005
 select t.expect_count('share=false のセッションは出ない', 'select * from public.my_sessions()', 0);
 reset role;
 
-\echo '--- K6. 繰越の期限が切れたら、my_status の繰越は0になる'
-update public.clients set carry_expire = current_date - 1 where code = 'TNK-0001';
+\echo '--- K6. 期限が切れた券は、my_status に出ない'
+update public.tickets set expires_on = current_date - 1 where id = 'aaaaaaaa-1111-1111-1111-111111111111';
 set role authenticated;
 select set_config('request.jwt.claim.sub', 'eeeeeeee-0000-0000-0000-000000000005', false);
-select t.expect_count('期限切れの繰越は0', 'select 1 from public.my_status() where carry = 0', 1);
+select t.expect_count('期限が切れた券は、会員に出ない', $q$select 1 from public.my_status() s, jsonb_array_elements(s.tickets) t$q$, 0);
 reset role;
 
 \echo '--- K7. 未ログイン(anon)には何も見せない'

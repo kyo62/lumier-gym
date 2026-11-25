@@ -3,8 +3,8 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/member/api';
-import { addMonthsString, formatDateJa, todayLocal } from '@/lib/member/dates';
-import { PLANS, PLAN_KEYS, SESSION_CHOICES, STRETCH_TICKET, carryValid, planInfo, stretchValid, ticketExpire } from '@/lib/member/karteRules';
+import { formatDateJa, todayLocal } from '@/lib/member/dates';
+import { SESSION_CHOICES, TICKET_KINDS, TICKET_KIND_KEYS, EXPIRING_DAYS, daysLeft, pickTicket, usableCount, ticketExpired, ticketUsable, type Ticket, type TicketKind } from '@/lib/member/karteRules';
 import type { AdminClient, AdminClientInput, AdminSession } from '@/lib/member/types';
 import { SESSION_TYPE_LABELS } from '@/lib/member/karte';
 import { Button, Card, ConfirmButton, EmptyState, Field, Loading, Notice, inputClass, useAsync, useSubmit } from './ui';
@@ -19,11 +19,11 @@ const intOr0 = (v: string) => {
   return Number.isInteger(n) && n >= 0 && n <= 99 ? n : 0;
 };
 
-/** 保存する項目（回数の項目は、記録のたびに変わるので、ここには含めない） */
-type Draft = Omit<AdminClientInput, 'id' | 'remain' | 'carry' | 'carryExpire' | 'stretchRemain' | 'stretchExpire'>;
+/** 保存する項目（券の回数は、記録のたびに変わるので、ここには含めない） */
+type Draft = Omit<AdminClientInput, 'id'>;
 const draftOf = (c: AdminClient): Draft => ({
   name: c.name, kana: c.kana, gender: c.gender, phone: c.phone, email: c.email, referrer: c.referrer, hobby: c.hobby,
-  plan: c.plan, ticketCount: c.ticketCount, ticketDate: c.ticketDate, targetLabel: c.targetLabel, targetDate: c.targetDate,
+  targetLabel: c.targetLabel, targetDate: c.targetDate,
   consentOn: c.consentOn, purpose: c.purpose, goal: c.goal, intakeBody: c.intakeBody, posture: c.posture,
   homework: c.homework, internalNote: c.internalNote,
 });
@@ -51,7 +51,7 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
 
   const text = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setDraft((d) => ({ ...d, [k]: e.target.value }));
-  const date = (k: 'ticketDate' | 'targetDate' | 'consentOn') => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const date = (k: 'targetDate' | 'consentOn') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setDraft((d) => ({ ...d, [k]: nullIfEmpty(e.target.value) }));
 
   /** いちばん新しい回数を読み直してから、入力した項目を保存する（記録で変わった回数を、上書きしない） */
@@ -62,31 +62,21 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
     });
     if (ok) reload();
   };
-  /** 回数だけを、すぐに保存する */
-  const saveCounters = async (patch: Partial<AdminClient>) => {
-    const ok = await save.run(async () => {
-      const fresh = (await api.adminListClients()).find((c) => c.id === client.id) ?? client;
-      await api.adminSaveClient({ ...fresh, ...patch, id: client.id });
-    });
-    if (ok) reload();
-  };
 
-  const info = planInfo(draft.plan);
-  const expire = ticketExpire(draft.ticketDate);
-  const carry = carryValid(client, today);
-  const stretch = stretchValid(client, today);
+  const expired = client.tickets.filter((t) => ticketExpired(t, today));
+  const soon = client.tickets.filter((t) => { const d = daysLeft(t, today); return d !== null && d <= EXPIRING_DAYS; });
   const alerts: string[] = [];
   if (!client.userId) alerts.push('会員ログインに、まだひもづいていません（お客様の画面には出ません）');
   if (!client.consentOn) alerts.push('個人情報の取扱いへの同意日が、未入力です');
-  if (client.carry > 0 && client.carryExpire && client.carryExpire < today) alerts.push(`繰越 ${client.carry} 回の期限（${formatDateJa(client.carryExpire)}）が過ぎています`);
-  if (expire && expire < today && client.remain > 0) alerts.push(`回数券の期限（${formatDateJa(expire)}）が過ぎています`);
+  for (const t of soon) alerts.push(`「${t.label}」（残り ${t.remain} 回）は、${formatDateJa(t.expiresOn ?? '')}までです。お声がけの目安です`);
+  for (const t of expired) alerts.push(`「${t.label}」は期限（${formatDateJa(t.expiresOn ?? '')}）が過ぎて、残り ${t.remain} 回は使えません`);
 
   return (
     <div className="space-y-6">
       <header>
         <p className="text-[11px] tracking-[0.3em] text-brass">{client.code}</p>
         <h1 className="mt-1 text-[1.5rem]">{client.name} 様</h1>
-        <p className="mt-1 text-xs text-muted">{PLANS[client.plan]?.label ?? client.plan}</p>
+        <p className="mt-1 text-xs text-muted">使える回数券：{usableCount(client.tickets, today)} 回</p>
       </header>
       {alerts.length > 0 ? (
         <ul className="space-y-2">
@@ -120,54 +110,7 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
         </div>
       </Card>
 
-      <Card>
-        <h2 className="mb-4 text-base">プランと回数</h2>
-        <div className="space-y-4">
-          <Field label="プラン" htmlFor="c-plan">
-            <select id="c-plan" value={draft.plan} onChange={text('plan')} className={inputClass}>
-              {PLAN_KEYS.map((k) => <option key={k} value={k}>{PLANS[k].label}{PLANS[k].price ? `（${PLANS[k].price?.toLocaleString('ja-JP')}円）` : ''}</option>)}
-            </select>
-          </Field>
-          {info.kind === 'ticket' ? (
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="回数券の回数（1回 8,800円）" htmlFor="c-tc">
-                <input id="c-tc" inputMode="numeric" value={draft.ticketCount ?? ''} onChange={(e) => setDraft((d) => ({ ...d, ticketCount: e.target.value === '' ? null : intOr0(e.target.value) }))} className={inputClass} />
-              </Field>
-              <Field label="購入日（2か月有効）" htmlFor="c-td" hint={expire ? `期限：${formatDateJa(expire)}` : undefined}>
-                <input id="c-td" type="date" value={draft.ticketDate ?? ''} onChange={date('ticketDate')} className={inputClass} />
-              </Field>
-            </div>
-          ) : null}
-
-          <ul className="grid grid-cols-2 gap-3">
-            <Counter label="今月の残り" value={client.remain} onChange={(n) => saveCounters({ remain: n })} busy={save.busy} />
-            <Counter label={`繰越${client.carryExpire ? `（${formatDateJa(client.carryExpire)}まで）` : ''}`} value={client.carry} dim={client.carry > 0 && carry === 0} onChange={(n) => saveCounters({ carry: n, carryExpire: n > 0 ? client.carryExpire : null })} busy={save.busy} />
-            <Counter label={`ストレッチ回数券${client.stretchExpire ? `（${formatDateJa(client.stretchExpire)}まで）` : ''}`} value={client.stretchRemain} dim={client.stretchRemain > 0 && stretch === 0} onChange={(n) => saveCounters({ stretchRemain: n })} busy={save.busy} />
-          </ul>
-
-          <div className="flex flex-wrap gap-2">
-            {info.kind === 'monthly' ? (
-              <ConfirmButton
-                label="月次の締め（月初に1回）"
-                confirmLabel={info.shared ? '残りはなくなります。締める' : '残りを繰越にして締める'}
-                variant="outline"
-                onConfirm={async () => {
-                  const ok = await save.run(async () => void (await api.adminRollMonth(client.id)));
-                  if (ok) reload();
-                }}
-              />
-            ) : null}
-            <ConfirmButton
-              label={`ストレッチ回数券を追加（${STRETCH_TICKET.count}回 ${STRETCH_TICKET.price.toLocaleString('ja-JP')}円）`}
-              confirmLabel="追加する"
-              variant="outline"
-              onConfirm={() => saveCounters({ stretchRemain: client.stretchRemain + STRETCH_TICKET.count, stretchExpire: addMonthsString(today, STRETCH_TICKET.months) })}
-            />
-          </div>
-          {info.shared ? <p className="text-[11px] leading-5 text-muted">家族割は、ご家族で回数をシェアします。繰越はありません。</p> : null}
-          {save.error ? <Notice tone="error">{save.error}</Notice> : null}
-        </div>
-      </Card>
+      <TicketSection client={client} reload={reload} />
 
       <Card>
         <h2 className="mb-1 text-base">目標・問診・ホームケア</h2>
@@ -221,33 +164,121 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
   );
 }
 
-function Counter({ label, value, onChange, busy, dim }: { label: string; value: number; onChange: (n: number) => void; busy: boolean; dim?: boolean }) {
+function TicketSection({ client, reload }: { client: AdminClient; reload: () => void }) {
+  const today = todayLocal();
+  const run = useSubmit();
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<{ kind: TicketKind; label: string; total: string; purchasedOn: string; expiresOn: string }>({
+    kind: 't4', label: '', total: '4', purchasedOn: today, expiresOn: '',
+  });
+  const edit = async (t: Ticket) => {
+    const ok = await run.run(() => api.adminUpdateTicket(t));
+    if (ok) reload();
+  };
+  const sorted = [...client.tickets].sort((a, b) => Number(ticketUsable(b, today)) - Number(ticketUsable(a, today)) || ((a.expiresOn ?? '9999') < (b.expiresOn ?? '9999') ? -1 : 1));
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const total = intOr0(form.total);
+    if (form.kind === 'other' && total < 1) {
+      run.setError('回数は1以上で入れてください。');
+      return;
+    }
+    const ok = await run.run(() =>
+      api.adminAddTicket(client.id, {
+        kind: form.kind, label: form.label, total: form.kind === 'other' ? total : 0, remain: form.kind === 'other' ? total : 0,
+        purchasedOn: form.purchasedOn, expiresOn: form.kind === 'other' ? nullIfEmpty(form.expiresOn) : null,
+      }),
+    );
+    if (ok) { setAdding(false); reload(); }
+  };
+
   return (
-    <li className="rounded-xl bg-sand/60 px-3 py-3">
-      <p className="text-[11px] leading-4 tracking-wider text-muted">{label}</p>
-      <p className={`tnum mt-1 text-xl ${dim ? 'text-muted line-through' : ''}`}>{value}<span className="ml-1 text-xs text-muted">回</span></p>
-      <div className="mt-2 flex gap-2">
-        <button type="button" aria-label={`${label}を1減らす`} disabled={busy || value <= 0} onClick={() => onChange(value - 1)} className="grid size-9 place-items-center rounded-full border border-line bg-surface text-lg disabled:opacity-40">−</button>
-        <button type="button" aria-label={`${label}を1増やす`} disabled={busy || value >= 99} onClick={() => onChange(value + 1)} className="grid size-9 place-items-center rounded-full border border-line bg-surface text-lg disabled:opacity-40">＋</button>
-      </div>
-    </li>
+    <Card>
+      <h2 className="mb-1 text-base">回数券</h2>
+      <p className="mb-4 text-[11px] leading-5 text-muted">複数持てます。回数は、期限の近い券から先に減ります。期限が切れた券は使えません（延長はしません）。</p>
+      <ul className="space-y-3">
+        {sorted.length === 0 ? <li><EmptyState title="回数券はありません" body="購入されたら、下の「回数券を追加」から入れてください。" /></li> : null}
+        {sorted.map((t) => {
+          const usableNow = ticketUsable(t, today);
+          const d = daysLeft(t, today);
+          return (
+            <li key={t.id} className={`rounded-xl border border-line p-3.5 ${usableNow ? '' : 'opacity-60'}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm">{t.label}<span className="ml-2 text-[11px] text-muted">{t.minutes}分</span></p>
+                  <p className="mt-0.5 text-[11px] leading-5 text-muted">
+                    購入 {formatDateJa(t.purchasedOn)}　
+                    {t.expiresOn ? `期限 ${formatDateJa(t.expiresOn)}` : '期限なし'}
+                    {ticketExpired(t, today) ? '（期限切れ）' : d !== null && d <= EXPIRING_DAYS ? `（あと${d}日）` : ''}
+                  </p>
+                </div>
+                <p className="tnum shrink-0 text-xl">{t.remain}<span className="ml-1 text-xs text-muted">/ {t.total} 回</span></p>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button type="button" aria-label={`${t.label}の回数を1減らす`} disabled={run.busy || t.remain <= 0} onClick={() => edit({ ...t, remain: t.remain - 1 })} className="grid size-9 place-items-center rounded-full border border-line bg-surface text-lg disabled:opacity-40">−</button>
+                <button type="button" aria-label={`${t.label}の回数を1増やす`} disabled={run.busy || t.remain >= t.total} onClick={() => edit({ ...t, remain: t.remain + 1 })} className="grid size-9 place-items-center rounded-full border border-line bg-surface text-lg disabled:opacity-40">＋</button>
+                <ConfirmButton label="この券を消す" confirmLabel="本当に消す" onConfirm={async () => { await api.adminDeleteTicket(t.id); reload(); }} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {run.error ? <div className="mt-3"><Notice tone="error">{run.error}</Notice></div> : null}
+
+      {adding ? (
+        <form onSubmit={add} className="mt-4 space-y-3 rounded-xl bg-sand/60 p-3.5" noValidate>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="種類" htmlFor="t-kind">
+              <select id="t-kind" value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as TicketKind }))} className={inputClass}>
+                {TICKET_KIND_KEYS.map((k) => <option key={k} value={k}>{TICKET_KINDS[k].label}（{TICKET_KINDS[k].price.toLocaleString('ja-JP')}円）</option>)}
+                <option value="other">その他の券（オンライン・ストレッチなど）</option>
+              </select>
+            </Field>
+            <Field label="購入日" htmlFor="t-date" hint={form.kind !== 'other' ? `期限は購入日から${TICKET_KINDS[form.kind].months}か月` : undefined}>
+              <input id="t-date" type="date" value={form.purchasedOn} onChange={(e) => setForm((f) => ({ ...f, purchasedOn: e.target.value }))} className={inputClass} />
+            </Field>
+          </div>
+          {form.kind === 'other' ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="名前" htmlFor="t-label"><input id="t-label" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} className={inputClass} placeholder="例：ストレッチ4回券" /></Field>
+              <Field label="回数" htmlFor="t-total"><input id="t-total" inputMode="numeric" value={form.total} onChange={(e) => setForm((f) => ({ ...f, total: e.target.value }))} className={inputClass} /></Field>
+              <Field label="期限" htmlFor="t-exp"><input id="t-exp" type="date" value={form.expiresOn} onChange={(e) => setForm((f) => ({ ...f, expiresOn: e.target.value }))} className={inputClass} /></Field>
+            </div>
+          ) : null}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={run.busy} className="flex-1">追加する</Button>
+            <Button type="button" variant="outline" onClick={() => setAdding(false)}>やめる</Button>
+          </div>
+        </form>
+      ) : (
+        <div className="mt-4"><Button type="button" variant="outline" onClick={() => setAdding(true)}>回数券を追加</Button></div>
+      )}
+    </Card>
   );
 }
 
 function SessionSection({ client, sessions, reload }: { client: AdminClient; sessions: AdminSession[]; reload: () => void }) {
-  const [form, setForm] = useState({ sessionDate: todayLocal(), choice: 'regular', menu: '', homecare: '', condition: '', share: true, waive: false });
+  const [form, setForm] = useState({ sessionDate: todayLocal(), choice: 'regular60', ticketId: '', menu: '', homecare: '', condition: '', share: true, waive: false });
   const submit = useSubmit();
   const [result, setResult] = useState('');
-  const set = (k: 'sessionDate' | 'choice' | 'menu' | 'homecare' | 'condition') => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = (k: 'sessionDate' | 'choice' | 'ticketId' | 'menu' | 'homecare' | 'condition') => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
   const isCancel = form.choice === 'cancel_same' || form.choice === 'noshow';
+  const usesTicket = ['regular60', 'regular30', 'online', 'stretch', 'cancel_same', 'noshow'].includes(form.choice);
+  const today = todayLocal();
+  const auto = pickTicket(client.tickets, today, {
+    minutes: form.choice === 'regular60' ? 60 : form.choice === 'regular30' ? 30 : undefined,
+    kinds: form.choice === 'online' || form.choice === 'stretch' ? ['other'] : form.choice === 'regular60' || form.choice === 'regular30' ? ['t2', 't4', 't8'] : undefined,
+  });
+  const candidates = client.tickets.filter((t) => ticketUsable(t, today));
   const attended = SESSION_CHOICES.find((c) => c.key === form.choice)?.status === 'attended';
   const ng = hits(form.menu, form.homecare);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const ok = await submit.run(async () => {
-      setResult(await api.adminRecordSession(client.id, form));
+      setResult(await api.adminRecordSession(client.id, { ...form, ticketId: form.ticketId || undefined }));
     });
     if (ok) {
       setForm((f) => ({ ...f, menu: '', homecare: '', condition: '', waive: false }));
@@ -258,7 +289,7 @@ function SessionSection({ client, sessions, reload }: { client: AdminClient; ses
   return (
     <Card>
       <h2 className="mb-1 text-base">セッションの記録</h2>
-      <p className="mb-4 text-[11px] leading-5 text-muted">記録すると、回数・繰越・キャンセル料が自動で計算されます。「メニュー」「ホームケア」は、お客様の画面に表示されます。</p>
+      <p className="mb-4 text-[11px] leading-5 text-muted">記録すると、回数券の回数が自動で減ります（当日・無断キャンセルも1回分）。「メニュー」「ホームケア」は、お客様の画面に表示されます。</p>
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
           <Field label="日付" htmlFor="s-date"><input id="s-date" type="date" value={form.sessionDate} onChange={set('sessionDate')} className={inputClass} /></Field>
@@ -268,6 +299,14 @@ function SessionSection({ client, sessions, reload }: { client: AdminClient; ses
             </select>
           </Field>
         </div>
+        {usesTicket ? (
+          <Field label="使う券" htmlFor="s-ticket" hint={auto ? `自動：「${auto.label}」（期限の近い券から）` : '使える券がありません'}>
+            <select id="s-ticket" value={form.ticketId} onChange={set('ticketId')} className={inputClass}>
+              <option value="">自動（期限の近い券から）</option>
+              {candidates.map((t) => <option key={t.id} value={t.id}>{t.label}（残り{t.remain}回{t.expiresOn ? `・${formatDateJa(t.expiresOn)}まで` : ''}）</option>)}
+            </select>
+          </Field>
+        ) : null}
         {attended ? (
           <>
             <Field label="今日のメニュー（お客様に表示）" htmlFor="s-menu"><textarea id="s-menu" rows={2} value={form.menu} onChange={set('menu')} className={inputClass} placeholder="例：胸まわりのストレッチ、呼吸のワーク" /></Field>
@@ -283,7 +322,7 @@ function SessionSection({ client, sessions, reload }: { client: AdminClient; ses
         {isCancel ? (
           <label className="flex items-start gap-3 text-[13px] leading-6">
             <input type="checkbox" checked={form.waive} onChange={(e) => setForm((f) => ({ ...f, waive: e.target.checked }))} className="mt-1.5 size-4 accent-[var(--color-brass)]" />
-            <span>免除する（キャンセル料・回数の消化をなしにする）</span>
+            <span>免除する（回数を使わない）</span>
           </label>
         ) : null}
         {submit.error ? <Notice tone="error">{submit.error}</Notice> : null}
@@ -305,8 +344,8 @@ function SessionSection({ client, sessions, reload }: { client: AdminClient; ses
             {s.menu ? <p className="mt-1.5 text-sm leading-7 whitespace-pre-wrap">{s.menu}</p> : null}
             {s.homecare ? <p className="mt-1 text-xs leading-6 whitespace-pre-wrap text-muted"><span className="mr-1 text-brass">ホームケア</span>{s.homecare}</p> : null}
             {s.condition ? <p className="mt-1 text-xs leading-6 whitespace-pre-wrap text-muted"><span className="mr-1 text-brass">状態（内部）</span>{s.condition}</p> : null}
-            {[s.consumed ? `回数 −${s.consumed}` : '', s.amount ? `${s.amount.toLocaleString('ja-JP')}円` : '', s.fee ? `キャンセル料 ${s.fee.toLocaleString('ja-JP')}円` : '', s.note].filter(Boolean).length > 0 ? (
-              <p className="mt-1.5 text-[11px] text-muted">{[s.consumed ? `回数 −${s.consumed}` : '', s.amount ? `${s.amount.toLocaleString('ja-JP')}円` : '', s.fee ? `キャンセル料 ${s.fee.toLocaleString('ja-JP')}円` : '', s.note].filter(Boolean).join(' ／ ')}</p>
+            {[s.consumed ? `回数 −${s.consumed}` : '', s.amount ? `${s.amount.toLocaleString('ja-JP')}円` : '', s.note].filter(Boolean).length > 0 ? (
+              <p className="mt-1.5 text-[11px] text-muted">{[s.consumed ? `回数 −${s.consumed}` : '', s.amount ? `${s.amount.toLocaleString('ja-JP')}円` : '', s.note].filter(Boolean).join(' ／ ')}</p>
             ) : null}
           </li>
         ))}

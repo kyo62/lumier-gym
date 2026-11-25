@@ -1,179 +1,201 @@
-import { addMonthsString, endOfMonthString } from './dates.ts';
+import { addMonthsString, daysBetween } from './dates.ts';
 
 /**
- * カルテの計算ルール（回数・繰越・キャンセル）。
- * 決定事項は 01_Manager/Square_初期設定メモ.md。顧客管理ツール（web/tools/顧客管理）と同じ。
+ * カルテの計算ルール（回数券の消化・キャンセル・期限）。
+ * 料金は回数券のみ（月額プランは廃止・2026-11-25 代表決定）。決定事項は 02_Engineer/顧客管理ページ設計.md。
  * 画面から切り離した純粋な関数にして、テストで確かめている。
  */
 
-export type PlanKind = 'monthly' | 'ticket' | 'single';
-export type PlanInfo = {
+export type TicketKind = 't2' | 't4' | 't8' | 'other';
+export type TicketMinutes = 30 | 60;
+
+export type Ticket = {
+  id: string;
+  kind: TicketKind;
+  /** 表示名（「その他」は手入力） */
   label: string;
-  kind: PlanKind;
-  /** 月額・単発の料金（税込）。回数券は null（回数×単価） */
-  price: number | null;
-  /** 回数券の1回あたり */
-  unit?: number;
-  /** 月額プランの月あたりの回数 */
-  sessions?: number;
-  /** 家族でシェアする（繰越なし） */
-  shared?: boolean;
-};
-
-export const PLANS: Record<string, PlanInfo> = {
-  m4: { label: '月4回', kind: 'monthly', price: 32000, sessions: 4 },
-  m2: { label: '月2回', kind: 'monthly', price: 17000, sessions: 2 },
-  pair4: { label: 'ペア 月4回', kind: 'monthly', price: 27200, sessions: 4 },
-  fam6: { label: '家族割 月6回', kind: 'monthly', price: 46200, sessions: 6, shared: true },
-  fam8: { label: '家族割 月8回', kind: 'monthly', price: 61600, sessions: 8, shared: true },
-  ticket: { label: '回数券', kind: 'ticket', price: null, unit: 8800 },
-  visitor: { label: '都度ビジター', kind: 'single', price: 12000 },
-  online: { label: 'オンライン', kind: 'single', price: 10000 },
-  trial: { label: '初回体験', kind: 'single', price: 3300 },
-};
-export const PLAN_KEYS = Object.keys(PLANS);
-
-/** コンディショニングストレッチは回数券のみ（4回 22,000円）。ほかのプランと併用できる */
-export const STRETCH_TICKET = { count: 4, price: 22000, months: 2 } as const;
-
-/** 回数券の有効期限（購入日から2か月） */
-export const TICKET_MONTHS = 2;
-
-export type Counters = {
-  plan: string;
+  total: number;
   remain: number;
-  carry: number;
-  carryExpire: string | null;
-  stretchRemain: number;
-  stretchExpire: string | null;
+  /** 1回の長さ（分） */
+  minutes: TicketMinutes;
+  purchasedOn: string;
+  /** 期限（この日まで使える）。null は期限なし（その他の券のみ） */
+  expiresOn: string | null;
 };
 
-export type ConsumedFrom = 'remain' | 'carry' | 'stretch';
+type KindInfo = { label: string; total: number; price: number; months: number; minutes: TicketMinutes };
+
+/** HP（site.ts の ticketPlans）と同じ内容 */
+export const TICKET_KINDS: Record<Exclude<TicketKind, 'other'>, KindInfo> = {
+  t2: { label: '2回券（30分）', total: 2, price: 9400, months: 2, minutes: 30 },
+  t4: { label: '4回券', total: 4, price: 35200, months: 3, minutes: 60 },
+  t8: { label: '8回券', total: 8, price: 65600, months: 4, minutes: 60 },
+};
+export const TICKET_KIND_KEYS = Object.keys(TICKET_KINDS) as Exclude<TicketKind, 'other'>[];
+
+/** 回数券を使わない料金（税込） */
+export const SINGLE_PRICES = { trial: 3300, visitor: 10000 } as const;
+
+/** 期限が近いとみなす日数 */
+export const EXPIRING_DAYS = 14;
+
+/** 購入日から、券を作る（期限は種類ごと）。「その他」は回数・期限を手入力 */
+export function newTicket(
+  id: string,
+  kind: Exclude<TicketKind, 'other'>,
+  purchasedOn: string,
+): Ticket {
+  const k = TICKET_KINDS[kind];
+  return {
+    id, kind, label: k.label, total: k.total, remain: k.total, minutes: k.minutes,
+    purchasedOn, expiresOn: addMonthsString(purchasedOn, k.months),
+  };
+}
+
+/** 券の追加入力から、券を作る。種類を選べば回数・期限・長さは自動、「その他」は手入力 */
+export function ticketFromInput(
+  id: string,
+  i: Pick<Ticket, 'kind' | 'label' | 'total' | 'remain' | 'purchasedOn' | 'expiresOn'>,
+): Ticket {
+  if (i.kind === 'other') {
+    return { id, kind: 'other', label: i.label.trim() || 'その他の券', total: i.total, remain: i.remain, minutes: 60, purchasedOn: i.purchasedOn, expiresOn: i.expiresOn };
+  }
+  return newTicket(id, i.kind, i.purchasedOn);
+}
+
+/** 使える券か（残りがあり、期限が切れていない） */
+export function ticketUsable(t: Pick<Ticket, 'remain' | 'expiresOn'>, today: string): boolean {
+  return t.remain > 0 && (!t.expiresOn || t.expiresOn >= today);
+}
+
+/** 期限が過ぎて、回数が残ったままの券（使えない） */
+export function ticketExpired(t: Pick<Ticket, 'remain' | 'expiresOn'>, today: string): boolean {
+  return t.remain > 0 && !!t.expiresOn && t.expiresOn < today;
+}
+
+/** 期限まで何日か（期限なし・期限切れ・残りなしは null） */
+export function daysLeft(t: Pick<Ticket, 'remain' | 'expiresOn'>, today: string): number | null {
+  if (!ticketUsable(t, today) || !t.expiresOn) return null;
+  return daysBetween(today, t.expiresOn);
+}
+
+/** 期限が近い券（EXPIRING_DAYS 日以内） */
+export function expiringSoon(tickets: Ticket[], today: string, days = EXPIRING_DAYS): Ticket[] {
+  return tickets.filter((t) => {
+    const d = daysLeft(t, today);
+    return d !== null && d <= days;
+  });
+}
+
+/** 使える残りの合計（回） */
+export function usableCount(tickets: Ticket[], today: string): number {
+  return tickets.filter((t) => ticketUsable(t, today)).reduce((n, t) => n + t.remain, 0);
+}
+
+/** 期限の近い順（期限なしは最後）に並べる */
+function byExpiry(a: Ticket, b: Ticket): number {
+  if (a.expiresOn === b.expiresOn) return a.purchasedOn < b.purchasedOn ? -1 : 1;
+  if (!a.expiresOn) return 1;
+  if (!b.expiresOn) return -1;
+  return a.expiresOn < b.expiresOn ? -1 : 1;
+}
+
+/**
+ * 使う券を選ぶ。指定があればそれ（使えるときだけ）、なければ「期限が近い券」から。
+ * minutes を渡すと、その長さの券だけを対象にする。
+ */
+export function pickTicket(
+  tickets: Ticket[],
+  today: string,
+  opts: { minutes?: TicketMinutes; kinds?: TicketKind[]; preferId?: string } = {},
+): Ticket | null {
+  const ok = tickets.filter((t) => ticketUsable(t, today)
+    && (!opts.minutes || t.minutes === opts.minutes)
+    && (!opts.kinds || opts.kinds.includes(t.kind)));
+  const preferred = opts.preferId ? ok.find((t) => t.id === opts.preferId) : undefined;
+  if (preferred) return preferred;
+  return [...ok].sort(byExpiry)[0] ?? null;
+}
 
 /** セッションの記録の選択肢（種類と出欠をひとつにまとめたもの） */
-export type SessionChoiceKey = 'regular' | 'trial' | 'visitor' | 'online' | 'stretch' | 'cancel_free' | 'cancel_same' | 'noshow';
+export type SessionChoiceKey =
+  | 'regular60' | 'regular30' | 'trial' | 'visitor' | 'online' | 'stretch'
+  | 'cancel_free' | 'cancel_same' | 'noshow';
 export type SessionStatus = 'attended' | 'cancel_same_day' | 'cancel_advance' | 'noshow';
 export type SessionType = 'regular' | 'trial' | 'online' | 'stretch' | 'visitor';
 export const SESSION_CHOICES: { key: SessionChoiceKey; label: string; type: SessionType; status: SessionStatus }[] = [
-  { key: 'regular', label: '通常セッション（60分）', type: 'regular', status: 'attended' },
+  { key: 'regular60', label: '回数券で受ける（60分）', type: 'regular', status: 'attended' },
+  { key: 'regular30', label: '回数券で受ける（30分）', type: 'regular', status: 'attended' },
   { key: 'trial', label: '初回体験（60分）', type: 'trial', status: 'attended' },
   { key: 'visitor', label: '都度ビジター（60分）', type: 'visitor', status: 'attended' },
-  { key: 'online', label: 'オンライン（50分）', type: 'online', status: 'attended' },
-  { key: 'stretch', label: 'コンディショニングストレッチ（45分）', type: 'stretch', status: 'attended' },
-  { key: 'cancel_free', label: 'キャンセル（前日23:59まで・料金なし）', type: 'regular', status: 'cancel_advance' },
-  { key: 'cancel_same', label: 'キャンセル（当日）', type: 'regular', status: 'cancel_same_day' },
-  { key: 'noshow', label: '無断キャンセル', type: 'regular', status: 'noshow' },
+  { key: 'online', label: 'オンライン（その他の券）', type: 'online', status: 'attended' },
+  { key: 'stretch', label: 'コンディショニングストレッチ（その他の券）', type: 'stretch', status: 'attended' },
+  { key: 'cancel_free', label: 'キャンセル（前日23:59まで・回数は減らさない）', type: 'regular', status: 'cancel_advance' },
+  { key: 'cancel_same', label: 'キャンセル（当日・1回分を消化）', type: 'regular', status: 'cancel_same_day' },
+  { key: 'noshow', label: '無断キャンセル（1回分を消化）', type: 'regular', status: 'noshow' },
 ];
 
-export const planInfo = (plan: string): PlanInfo => PLANS[plan] ?? PLANS.trial;
-const isMember = (plan: string) => planInfo(plan).kind !== 'single';
-
-/** 有効な繰越の回数（期限が過ぎていれば 0） */
-export function carryValid(c: Pick<Counters, 'carry' | 'carryExpire'>, today: string): number {
-  if (!c.carry) return 0;
-  return c.carryExpire && c.carryExpire < today ? 0 : c.carry;
-}
-
-export function stretchValid(c: Pick<Counters, 'stretchRemain' | 'stretchExpire'>, today: string): number {
-  if (!c.stretchRemain) return 0;
-  return c.stretchExpire && c.stretchExpire < today ? 0 : c.stretchRemain;
-}
-
-/** 回数券の期限 */
-export function ticketExpire(ticketDate: string | null): string | null {
-  return ticketDate ? addMonthsString(ticketDate, TICKET_MONTHS) : null;
-}
-
 export type SessionOutcome = {
-  counters: Counters;
+  /** 回数が変わった券（変わらなければ空） */
+  changed: Ticket[];
   consumed: number;
-  consumedFrom: ConsumedFrom | null;
-  /** キャンセル料（円）。次回のご来店時にいただく */
-  fee: number;
+  /** 使った券 */
+  ticketId: string | null;
   /** 単発の料金（円） */
   amount: number;
   note: string;
   message: string;
 };
 
-/** 回数を1つ使う（繰越が先、そのあと当月） */
-function consumeOne(c: Counters, today: string): { counters: Counters; from: ConsumedFrom | null } {
-  if (carryValid(c, today) > 0) return { counters: { ...c, carry: c.carry - 1 }, from: 'carry' };
-  if (c.remain > 0) return { counters: { ...c, remain: c.remain - 1 }, from: 'remain' };
-  return { counters: c, from: null };
-}
-
 const yen = (n: number) => `${n.toLocaleString('ja-JP')}円`;
 
-/** キャンセル料：体験 3,300円／ビジター 6,000円／会員 1,000円。決まっていないプランは null */
-function sameDayFee(plan: string): number | null {
-  if (plan === 'trial') return 3300;
-  if (plan === 'visitor') return 6000;
-  return isMember(plan) ? 1000 : null;
-}
-
-/** セッションを記録したときの、回数・料金の変化 */
-export function applySession(c: Counters, choice: SessionChoiceKey, today: string, waive = false): SessionOutcome {
-  const base: SessionOutcome = { counters: c, consumed: 0, consumedFrom: null, fee: 0, amount: 0, note: '', message: '' };
-  const info = planInfo(c.plan);
-  const member = isMember(c.plan);
-
-  if (choice === 'regular') {
-    if (member) {
-      const used = consumeOne(c, today);
-      if (used.from) return { ...base, counters: used.counters, consumed: 1, consumedFrom: used.from, message: '回数を1つ使いました。' };
-      return { ...base, note: '残り枠がありません。回数は減らしていません。', message: '残り枠がありません（記録だけ保存）。' };
-    }
-    const amount = info.price ?? 0;
-    return { ...base, amount, message: `単発の料金 ${yen(amount)} を記録しました。` };
-  }
-  if (choice === 'trial' || choice === 'visitor' || choice === 'online') {
-    const amount = PLANS[choice].price ?? 0;
-    return { ...base, amount, message: `料金 ${yen(amount)} を記録しました。` };
-  }
-  if (choice === 'stretch') {
-    if (stretchValid(c, today) > 0) {
-      return { ...base, counters: { ...c, stretchRemain: c.stretchRemain - 1 }, consumed: 1, consumedFrom: 'stretch', message: 'ストレッチ回数券を1回使いました。' };
-    }
-    return { ...base, note: 'ストレッチ回数券の残りがありません。回数は減らしていません。', message: 'ストレッチ回数券の残りがありません（記録だけ保存）。' };
-  }
-  if (choice === 'cancel_same') {
-    if (waive) return { ...base, note: '免除', message: '免除として記録しました。' };
-    const fee = sameDayFee(c.plan);
-    if (fee === null) return { ...base, note: 'キャンセル料の額は未決です', message: 'このプランのキャンセル料は、まだ決まっていません。' };
-    return { ...base, fee, note: '次回のご来店時にいただく', message: `キャンセル料 ${yen(fee)} を記録しました。` };
-  }
-  if (choice === 'noshow') {
-    if (waive) return { ...base, note: '免除', message: '免除として記録しました。' };
-    if (member) {
-      const used = consumeOne(c, today);
-      if (used.from) return { ...base, counters: used.counters, consumed: 1, consumedFrom: used.from, note: '無断キャンセルのため、1回分を消化', message: '無断キャンセルとして、1回分を使いました。' };
-      return { ...base, note: '無断キャンセル（残り枠なし）', message: '残り枠がないため、回数は減らしていません。' };
-    }
-    const fee = sameDayFee(c.plan);
-    if (fee === null) return { ...base, note: 'キャンセル料の額は未決です', message: 'このプランの額は、まだ決まっていません。' };
-    return { ...base, fee, note: '無断キャンセル。次回のご来店時にいただく', message: `無断キャンセルとして ${yen(fee)} を記録しました。` };
-  }
-  return { ...base, message: 'キャンセル（料金なし）を記録しました。' };
-}
-
-/** 記録を消したときに、使った回数を元に戻す */
-export function revertSession(c: Counters, s: { consumed: number; consumedFrom: ConsumedFrom | null }): Counters {
-  if (!s.consumed || !s.consumedFrom) return c;
-  if (s.consumedFrom === 'carry') return { ...c, carry: c.carry + s.consumed };
-  if (s.consumedFrom === 'stretch') return { ...c, stretchRemain: c.stretchRemain + s.consumed };
-  return { ...c, remain: c.remain + s.consumed };
+function decrement(tickets: Ticket[], t: Ticket): Ticket[] {
+  return tickets.filter((x) => x.id === t.id).map((x) => ({ ...x, remain: x.remain - 1 }));
 }
 
 /**
- * 月次の締め（月初に1回）。月額プランの方だけ。
- * 当月の残りは、翌月末までの繰越になる（これまでの繰越はなくなる）。家族割は繰越なし。
+ * セッションを記録したときの、回数・料金の変化。
+ * 当日キャンセル・無断キャンセルは、回数券でも1回分を使う（waive で免除）。
  */
-export function rollMonth(c: Counters, today: string): { counters: Counters; lost: number } | null {
-  const info = planInfo(c.plan);
-  if (info.kind !== 'monthly' || !info.sessions) return null;
-  const lost = carryValid(c, today);
-  if (info.shared) return { counters: { ...c, carry: 0, carryExpire: null, remain: info.sessions }, lost: c.remain + lost };
-  const expire = c.remain > 0 ? endOfMonthString(addMonthsString(today, 1)) : null;
-  return { counters: { ...c, carry: c.remain, carryExpire: expire, remain: info.sessions }, lost };
+export function applySession(
+  tickets: Ticket[],
+  choice: SessionChoiceKey,
+  today: string,
+  opts: { waive?: boolean; ticketId?: string } = {},
+): SessionOutcome {
+  const none: SessionOutcome = { changed: [], consumed: 0, ticketId: null, amount: 0, note: '', message: '' };
+  const consume = (t: Ticket, note: string, message: string): SessionOutcome =>
+    ({ ...none, changed: decrement(tickets, t), consumed: 1, ticketId: t.id, note, message });
+
+  if (choice === 'regular60' || choice === 'regular30') {
+    const minutes: TicketMinutes = choice === 'regular60' ? 60 : 30;
+    const t = pickTicket(tickets, today, { minutes, kinds: ['t2', 't4', 't8'], preferId: opts.ticketId });
+    if (t) return consume(t, '', `「${t.label}」を1回使いました。`);
+    return { ...none, note: `使える${minutes}分の回数券がありません。回数は減らしていません。`, message: `使える${minutes}分の回数券がありません（記録だけ保存）。` };
+  }
+  if (choice === 'trial' || choice === 'visitor') {
+    const amount = SINGLE_PRICES[choice];
+    return { ...none, amount, message: `料金 ${yen(amount)} を記録しました。` };
+  }
+  if (choice === 'online' || choice === 'stretch') {
+    const t = pickTicket(tickets, today, { kinds: ['other'], preferId: opts.ticketId });
+    if (t) return consume(t, '', `「${t.label}」を1回使いました。`);
+    return { ...none, note: '使える「その他の券」がありません。料金は別途', message: '使える「その他の券」がありません（記録だけ保存）。' };
+  }
+  if (choice === 'cancel_same' || choice === 'noshow') {
+    const what = choice === 'noshow' ? '無断キャンセル' : '当日キャンセル';
+    if (opts.waive) return { ...none, note: '免除', message: '免除として記録しました。' };
+    const t = pickTicket(tickets, today, { preferId: opts.ticketId, kinds: ['t2', 't4', 't8', 'other'] });
+    if (t) return consume(t, `${what}のため、1回分を消化`, `${what}として、1回分を使いました。`);
+    return { ...none, note: `${what}（使える回数券なし）`, message: '使える回数券がないため、回数は減らしていません。' };
+  }
+  return { ...none, message: 'キャンセル（回数は減らしません）を記録しました。' };
+}
+
+/** 記録を消したときに、使った回数を元に戻す（券がもうなければ何もしない） */
+export function revertSession(tickets: Ticket[], s: { consumed: number; ticketId: string | null }): Ticket[] {
+  if (!s.consumed || !s.ticketId) return [];
+  return tickets
+    .filter((t) => t.id === s.ticketId)
+    .map((t) => ({ ...t, remain: Math.min(t.total, t.remain + s.consumed) }));
 }

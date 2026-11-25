@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { api } from '@/lib/member/api';
-import { PLANS, PLAN_KEYS, carryValid, ticketExpire } from '@/lib/member/karteRules';
+import { EXPIRING_DAYS, expiringSoon, ticketExpired, usableCount } from '@/lib/member/karteRules';
 import { todayLocal } from '@/lib/member/dates';
 import type { AdminClient } from '@/lib/member/types';
 import { AdminGate, BackLink } from '@/components/member/AdminGate';
@@ -38,13 +38,13 @@ function Switch() {
   );
 }
 
+/** 要確認：同意日が未入力／期限が近い券／期限が切れて残った券 */
 function alertCount(c: AdminClient): number {
   const today = todayLocal();
-  const expire = ticketExpire(c.ticketDate);
   let n = 0;
   if (!c.consentOn) n++;
-  if (c.carry > 0 && carryValid(c, today) === 0) n++;
-  if (PLANS[c.plan]?.kind === 'ticket' && expire && expire < today && c.remain > 0) n++;
+  n += expiringSoon(c.tickets, today, EXPIRING_DAYS).length;
+  n += c.tickets.filter((t) => ticketExpired(t, today)).length;
   return n;
 }
 
@@ -52,7 +52,6 @@ function ClientList() {
   const { data: clients, error, loading, reload } = useAsync(api.adminListClients);
   const [q, setQ] = useState('');
   const [name, setName] = useState('');
-  const [plan, setPlan] = useState('trial');
   const create = useSubmit();
   const router = useRouter();
 
@@ -63,9 +62,8 @@ function ClientList() {
     let createdId = '';
     const ok = await create.run(async () => {
       const c = await api.adminSaveClient({
-        name, kana: '', gender: '女性', phone: '', email: '', referrer: '', hobby: '', plan,
-        ticketCount: null, ticketDate: null, remain: PLANS[plan]?.sessions ?? 0, carry: 0, carryExpire: null,
-        stretchRemain: 0, stretchExpire: null, targetLabel: '', targetDate: null, consentOn: null,
+        name, kana: '', gender: '女性', phone: '', email: '', referrer: '', hobby: '',
+        targetLabel: '', targetDate: null, consentOn: null,
         purpose: '', goal: '', intakeBody: '', posture: '', homework: '', internalNote: '',
       });
       createdId = c.id;
@@ -83,11 +81,6 @@ function ClientList() {
         <h2 className="mb-4 text-base">新しいカルテを作る</h2>
         <form onSubmit={onCreate} className="space-y-4" noValidate>
           <Field label="お名前" htmlFor="n-name"><input id="n-name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-          <Field label="プラン" htmlFor="n-plan">
-            <select id="n-plan" value={plan} onChange={(e) => setPlan(e.target.value)} className={inputClass}>
-              {PLAN_KEYS.map((k) => <option key={k} value={k}>{PLANS[k].label}</option>)}
-            </select>
-          </Field>
           {create.error ? <Notice tone="error">{create.error}</Notice> : null}
           <Button type="submit" disabled={create.busy || !name.trim()} className="w-full">カルテを作る</Button>
         </form>
@@ -112,8 +105,7 @@ function ClientList() {
                     <span className="block text-[11px] tracking-wider text-muted">{c.code}</span>
                     <span className="block truncate text-sm">{c.name}</span>
                     <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
-                      <span>{PLANS[c.plan]?.label ?? c.plan}</span>
-                      <span>残り {c.remain}回</span>
+                      <span>使える回数券 {usableCount(c.tickets, todayLocal())} 回</span>
                       {c.userId ? <span>ログイン：ひもづけ済み</span> : <span>ログイン：未</span>}
                       {n > 0 ? <span className="rounded-full bg-brass-soft px-2 py-0.5 text-ink">要確認 {n}</span> : null}
                     </span>

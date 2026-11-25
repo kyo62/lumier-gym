@@ -1,11 +1,11 @@
 import type {
-  ActivityComment, ActivityInput, ActivityLog, AdminActivity, AdminClient, AdminClientInput, AdminSession, SessionRecordInput, BodyInput, BodyLog, MealInput, MealLog,
+  ActivityComment, ActivityInput, ActivityLog, AdminActivity, AdminClient, AdminClientInput, AdminSession, SessionRecordInput, TicketInput, BodyInput, BodyLog, MealInput, MealLog,
   MemberApi, MemberLogs, MemberSummary, Me, MySession, MyStatus,
   Video, VideoInput, WorkoutInput, WorkoutLog,
 } from './types.ts';
 import { toDateString, todayLocal } from './dates.ts';
-import { closeMonth, recordSession, removeSession, type KarteStore } from './karteService.ts';
-import { ticketExpire } from './karteRules.ts';
+import { recordSession, removeSession, type KarteStore } from './karteService.ts';
+import { newTicket, ticketFromInput, ticketUsable, type Ticket } from './karteRules.ts';
 
 /**
  * デモ用のデータ層。Supabase の設定がなくても、会員ページを触れるようにする。
@@ -16,7 +16,7 @@ import { ticketExpire } from './karteRules.ts';
  */
 
 export const DEMO_CODE = '123456';
-const STORAGE_KEY = 'toneka-member-demo-v1';
+const STORAGE_KEY = 'toneka-member-demo-v2';
 
 type Owned = { userId: string; createdAt: string };
 type DemoUser = { id: string; email: string; displayName: string; isAdmin: boolean; consentedAt: string | null };
@@ -94,27 +94,31 @@ function seed(): Db {
     activities: [],
     comments: [],
     clients: [
-      sampleClient({ id: 'demo-client-1', code: 'TNK-0001', name: '山田 花子（サンプル）', kana: 'ヤマダ ハナコ', plan: 'm4', remain: 3, carry: 1, carryExpire: daysAgo(-20), targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', posture: '【見立て】巻き肩。呼吸が浅い', internalNote: '内部メモのサンプル' }),
-      sampleClient({ id: 'demo-client-2', code: 'TNK-0002', name: '田中 みどり（サンプル）', kana: 'タナカ ミドリ', plan: 'ticket', ticketCount: 4, ticketDate: daysAgo(50), remain: 1 }),
+      sampleClient({ id: 'demo-client-1', code: 'TNK-0001', name: '山田 花子（サンプル）', kana: 'ヤマダ ハナコ', tickets: [sampleTicket('t4', 20, 2)], targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', posture: '【見立て】巻き肩。呼吸が浅い', internalNote: '内部メモのサンプル' }),
+      sampleClient({ id: 'demo-client-2', code: 'TNK-0002', name: '田中 みどり（サンプル）', kana: 'タナカ ミドリ', tickets: [sampleTicket('t8', 80, 1), sampleTicket('t2', 5, 2)] }),
     ],
     karteSessions: [
       sampleSession('demo-client-1', daysAgo(7), { menu: '胸まわりのストレッチ、呼吸のワーク', homecare: '息を吐く呼吸を朝晩3回', condition: '走ったあとのふくらはぎの張り' }),
-      sampleSession('demo-client-2', daysAgo(10), { menu: '股関節まわりの動きの確認', consumed: 1, consumedFrom: 'remain' }),
+      sampleSession('demo-client-2', daysAgo(10), { menu: '股関節まわりの動きの確認', consumed: 1 }),
     ],
   };
 }
 
+/** デモ用の券：購入から ago 日目、残りが remain 回 */
+function sampleTicket(kind: 't2' | 't4' | 't8', ago: number, remain: number): Ticket {
+  return { ...newTicket(newId(), kind, daysAgo(ago)), remain };
+}
+
 function sampleClient(p: Partial<AdminClient> & Pick<AdminClient, 'id' | 'code' | 'name'>): AdminClient {
   return {
-    userId: null, kana: '', gender: '女性', phone: '', email: '', referrer: '', hobby: '', plan: 'trial',
-    ticketCount: null, ticketDate: null, remain: 0, carry: 0, carryExpire: null, stretchRemain: 0, stretchExpire: null,
+    userId: null, kana: '', gender: '女性', phone: '', email: '', referrer: '', hobby: '', tickets: [],
     targetLabel: '', targetDate: null, consentOn: null, purpose: '', goal: '', intakeBody: '', posture: '', homework: '', internalNote: '',
     ...p,
   };
 }
 function sampleSession(clientId: string, sessionDate: string, p: Partial<AdminSession> = {}): AdminSession {
   return {
-    id: newId(), clientId, sessionDate, type: 'regular', status: 'attended', consumed: 0, consumedFrom: null,
+    id: newId(), clientId, sessionDate, type: 'regular', status: 'attended', consumed: 0, consumedTicketId: null,
     fee: 0, amount: 0, condition: '', menu: '', homecare: '', share: true, note: '', ...p,
   };
 }
@@ -129,8 +133,7 @@ function nextCode(clients: AdminClient[]): string {
 function sampleKarte(db: Db, userId: string, email: string) {
   const id = newId();
   db.clients.push(sampleClient({
-    id, code: nextCode(db.clients), userId, name: 'お客様', email, plan: 'm4', remain: 3, carry: 1, carryExpire: daysAgo(-20),
-    stretchRemain: 4, stretchExpire: daysAgo(-50),
+    id, code: nextCode(db.clients), userId, name: 'お客様', email, tickets: [sampleTicket('t4', 20, 2), sampleTicket('t2', 55, 1)],
     targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14',
     homework: '朝と夜に、息を吐く呼吸を3回。肩を大きく後ろに回す動きを10回。',
     purpose: '走ったあとの肩・背中の張りが気になる', goal: '3月のレースを、楽しく走り切る',
@@ -229,10 +232,14 @@ function demoKarteStore(): KarteStore {
       if (!c) throw new Error('カルテが見つかりません。');
       return { ...c };
     },
-    async saveCounters(id, k) {
+    async saveTickets(changed) {
       mutate((db) => {
-        const c = db.clients.find((x) => x.id === id);
-        if (c) Object.assign(c, { remain: k.remain, carry: k.carry, carryExpire: k.carryExpire, stretchRemain: k.stretchRemain, stretchExpire: k.stretchExpire });
+        for (const t of changed) {
+          for (const c of db.clients) {
+            const i = c.tickets.findIndex((x) => x.id === t.id);
+            if (i >= 0) c.tickets[i] = { ...t };
+          }
+        }
       });
     },
     async insertSession(row) {
@@ -451,11 +458,11 @@ export const demoApi: MemberApi = {
     if (!c) return null;
     const today = todayLocal();
     const status: MyStatus = {
-      name: c.name, plan: c.plan, remain: c.remain,
-      carry: c.carryExpire && c.carryExpire < today ? 0 : c.carry, carryExpire: c.carryExpire,
-      ticketExpire: ticketExpire(c.ticketDate), targetLabel: c.targetLabel, targetDate: c.targetDate,
+      name: c.name,
+      tickets: c.tickets.filter((t) => ticketUsable(t, today)).map((t) => ({ ...t }))
+        .sort((a, b) => ((a.expiresOn ?? '9999') < (b.expiresOn ?? '9999') ? -1 : 1)),
+      targetLabel: c.targetLabel, targetDate: c.targetDate,
       homework: c.homework, purpose: c.purpose, goal: c.goal, hobby: c.hobby, intakeBody: c.intakeBody,
-      stretchRemain: c.stretchExpire && c.stretchExpire < today ? 0 : c.stretchRemain, stretchExpire: c.stretchExpire,
     };
     return status; // 見立て・内部メモ・紹介者・連絡先は、ここには入らない
   },
@@ -559,10 +566,14 @@ export const demoApi: MemberApi = {
       if (input.id) {
         const existing = db.clients.find((c) => c.id === input.id);
         if (!existing) throw new Error('カルテが見つかりません。');
-        Object.assign(existing, input, { id: existing.id });
+        const { tickets: _t, ...rest } = input as AdminClientInput & { tickets?: Ticket[]; code?: string; userId?: string | null };
+        void _t;
+        delete (rest as { code?: string }).code;
+        delete (rest as { userId?: string | null }).userId;
+        Object.assign(existing, rest, { id: existing.id });
         return { ...existing };
       }
-      const created: AdminClient = { ...sampleClient({ id: newId(), code: nextCode(db.clients), name: input.name }), ...input, id: newId(), code: nextCode(db.clients), userId: null };
+      const created: AdminClient = { ...sampleClient({ id: newId(), code: nextCode(db.clients), name: input.name }), ...input, id: newId(), code: nextCode(db.clients), userId: null, tickets: [] };
       db.clients.push(created);
       return { ...created };
     });
@@ -587,9 +598,28 @@ export const demoApi: MemberApi = {
     requireAdmin(load());
     await removeSession(demoKarteStore(), sessionId);
   },
-  async adminRollMonth(clientId) {
-    requireAdmin(load());
-    return closeMonth(demoKarteStore(), clientId, todayLocal());
+  async adminAddTicket(clientId, input: TicketInput) {
+    mutate((db) => {
+      requireAdmin(db);
+      const c = db.clients.find((x) => x.id === clientId);
+      if (!c) throw new Error('カルテが見つかりません。');
+      c.tickets.push(ticketFromInput(newId(), input));
+    });
+  },
+  async adminUpdateTicket(ticket) {
+    mutate((db) => {
+      requireAdmin(db);
+      for (const c of db.clients) {
+        const i = c.tickets.findIndex((x) => x.id === ticket.id);
+        if (i >= 0) c.tickets[i] = { ...ticket };
+      }
+    });
+  },
+  async adminDeleteTicket(ticketId) {
+    mutate((db) => {
+      requireAdmin(db);
+      for (const c of db.clients) c.tickets = c.tickets.filter((x) => x.id !== ticketId);
+    });
   },
   async adminLinkClient(clientId, email) {
     mutate((db) => {

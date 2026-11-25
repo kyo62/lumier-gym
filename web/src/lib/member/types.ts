@@ -1,3 +1,5 @@
+import type { Ticket } from './karteRules.ts';
+
 /**
  * 会員ページのデータの型と、データ層の窓口（MemberApi）。
  *
@@ -81,11 +83,8 @@ export type AdminActivity = ActivityLog & { userId: string; memberName: string }
 /** お客様に見せるカルテの要点（見立て・内部メモ・料金・キャンセル履歴は含まれない） */
 export type MyStatus = {
   name: string;
-  plan: string;
-  remain: number;
-  carry: number;
-  carryExpire: string | null;
-  ticketExpire: string | null;
+  /** 使える回数券（期限内・残りあり）。期限の近い順 */
+  tickets: Ticket[];
   targetLabel: string;
   targetDate: string | null;
   homework: string;
@@ -94,9 +93,6 @@ export type MyStatus = {
   hobby: string;
   /** 最初の問診票に、お客様ご自身が書いた体の状態 */
   intakeBody: string;
-  /** ストレッチ回数券の残りと期限（期限切れなら 0） */
-  stretchRemain: number;
-  stretchExpire: string | null;
 };
 /** お客様に見せるセッションの記録 */
 export type MySession = {
@@ -119,14 +115,8 @@ export type AdminClient = {
   email: string;
   referrer: string;
   hobby: string;
-  plan: string;
-  ticketCount: number | null;
-  ticketDate: string | null;
-  remain: number;
-  carry: number;
-  carryExpire: string | null;
-  stretchRemain: number;
-  stretchExpire: string | null;
+  /** 回数券（複数持てる。回数は券ごと） */
+  tickets: Ticket[];
   targetLabel: string;
   targetDate: string | null;
   consentOn: string | null;
@@ -139,7 +129,9 @@ export type AdminClient = {
   homework: string;
   internalNote: string;
 };
-export type AdminClientInput = Omit<AdminClient, 'id' | 'code' | 'userId'> & { id?: string };
+export type AdminClientInput = Omit<AdminClient, 'id' | 'code' | 'userId' | 'tickets'> & { id?: string };
+/** 券の追加（種類を選ぶと、回数・期限は自動。「その他」は手入力） */
+export type TicketInput = Pick<Ticket, 'kind' | 'label' | 'total' | 'remain' | 'purchasedOn' | 'expiresOn'>;
 
 export type AdminSession = {
   id: string;
@@ -148,7 +140,8 @@ export type AdminSession = {
   type: string;
   status: string;
   consumed: number;
-  consumedFrom: 'remain' | 'carry' | 'stretch' | null;
+  /** 使った券（消えていれば null） */
+  consumedTicketId: string | null;
   fee: number;
   amount: number;
   /** 状態メモ（内部のみ） */
@@ -166,8 +159,10 @@ export type SessionRecordInput = {
   homecare: string;
   condition: string;
   share: boolean;
-  /** キャンセル料・無断キャンセルを免除する */
+  /** 当日キャンセル・無断キャンセルでも、回数を使わない */
   waive: boolean;
+  /** 使う券を指定する（空なら期限の近い券から） */
+  ticketId?: string;
 };
 
 export type VideoProvider = 'youtube' | 'vimeo' | 'url';
@@ -262,12 +257,15 @@ export interface MemberApi {
   adminSaveClient(input: AdminClientInput): Promise<AdminClient>;
   adminDeleteClient(id: string): Promise<void>;
   adminListSessions(clientId: string): Promise<AdminSession[]>;
-  /** セッションを記録し、回数・繰越・キャンセル料を自動で計算する。結果のひとことを返す */
+  /** セッションを記録し、回数券の回数を自動で計算する。結果のひとことを返す */
   adminRecordSession(clientId: string, input: SessionRecordInput): Promise<string>;
   /** セッションの記録を消し、使った回数を元に戻す */
   adminDeleteSession(sessionId: string): Promise<void>;
-  /** 月次の締め（月初に1回）。なくなった回数を返す */
-  adminRollMonth(clientId: string): Promise<number>;
+  /** 回数券を追加する（種類を選ぶと、回数・期限は自動） */
+  adminAddTicket(clientId: string, input: TicketInput): Promise<void>;
+  /** 回数券の回数・期限・名前を直す */
+  adminUpdateTicket(ticket: Ticket): Promise<void>;
+  adminDeleteTicket(ticketId: string): Promise<void>;
   /** カルテと会員ログイン（メールアドレス）をひもづける */
   adminLinkClient(clientId: string, email: string): Promise<void>;
 }

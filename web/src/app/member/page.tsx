@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { ArrowRight, Check, MessageCircle, PlayCircle } from 'lucide-react';
 import { api } from '@/lib/member/api';
 import { formatDateJa, todayLocal } from '@/lib/member/dates';
+import { EXPIRING_DAYS, daysLeft } from '@/lib/member/karteRules';
 import { booking } from '@/config/site';
 import { useMember } from '@/components/member/MemberApp';
 import { InstallGuide } from '@/components/member/InstallGuide';
@@ -23,11 +24,11 @@ export default function MemberHomePage() {
         <p className="text-[11px] tracking-[0.3em] text-brass uppercase">Reservation</p>
         <h2 className="mt-2 text-lg">次回のご予約</h2>
         <p className="mt-2 mb-5 text-xs leading-6 text-muted">
-          予約と変更は、予約ページ（Square）で行います。
+          ご予約と変更は、こちらからご連絡ください。
           <br />
           {booking.cancelPolicy}
         </p>
-        <ReserveButton className="w-full">予約ページを開く</ReserveButton>
+        <ReserveButton className="w-full">ご予約はこちら</ReserveButton>
       </Card>
 
       <KarteCard />
@@ -49,6 +50,7 @@ function KarteCard() {
   if (loading || !data) return null;
   const { status, latest, fresh } = data;
   if (!status && fresh === 0) return null;
+  const soonest = status?.tickets.find((t) => { const d = daysLeft(t, todayLocal()); return d !== null && d <= EXPIRING_DAYS; }) ?? null;
 
   return (
     <Card>
@@ -71,9 +73,13 @@ function KarteCard() {
             </Link>
           </div>
           <p className="text-sm">
-            今月の残り <span className="tnum text-lg">{status.remain}</span> 回
-            {status.carry > 0 ? <span className="ml-3 text-xs text-muted">繰越 {status.carry} 回</span> : null}
+            回数券の残り <span className="tnum text-lg">{status.tickets.reduce((n, t) => n + t.remain, 0)}</span> 回
           </p>
+          {soonest ? (
+            <p className="mt-2 text-xs leading-6 text-ink">
+              「{soonest.label}」の期限が近づいています（{formatDateJa(soonest.expiresOn ?? '')}まで）。
+            </p>
+          ) : null}
           {latest ? (
             <p className="mt-3 text-xs leading-6 text-muted">
               前回 {formatDateJa(latest.sessionDate)}：{latest.menu || '記録なし'}

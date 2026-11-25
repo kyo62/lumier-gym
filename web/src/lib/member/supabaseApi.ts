@@ -4,7 +4,8 @@ import type {
   MealInput, MealLog, MealType, MemberApi, MemberLogs, MemberSummary, Me, MySession, MyStatus,
   Video, VideoInput, VideoProvider, VideoVisibility, WorkoutInput, WorkoutLog,
 } from './types.ts';
-import { closeMonth, recordSession, removeSession, type KarteStore } from './karteService.ts';
+import { recordSession, removeSession, type KarteStore } from './karteService.ts';
+import { ticketFromInput, type Ticket } from './karteRules.ts';
 import { todayLocal } from './dates.ts';
 
 /**
@@ -100,30 +101,29 @@ const toActivity = (r: Row): ActivityLog => ({
     .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
 });
 const dateOrNull = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const toTicket = (r: Row): Ticket => ({
+  id: str(r.id), kind: (['t2', 't4', 't8'].includes(str(r.kind)) ? str(r.kind) : 'other') as Ticket['kind'], label: str(r.label),
+  total: Number(r.total ?? 0), remain: Number(r.remain ?? 0), minutes: Number(r.minutes) === 30 ? 30 : 60,
+  purchasedOn: str(r.purchased_on), expiresOn: dateOrNull(r.expires_on),
+});
+const toTickets = (v: unknown): Ticket[] =>
+  (Array.isArray(v) ? (v as Row[]) : []).map(toTicket).sort((a, b) => ((a.expiresOn ?? '9999') < (b.expiresOn ?? '9999') ? -1 : 1));
 const toStatus = (r: Row): MyStatus => ({
-  name: str(r.name), plan: str(r.plan), remain: Number(r.remain ?? 0), carry: Number(r.carry ?? 0),
-  carryExpire: dateOrNull(r.carry_expire), ticketExpire: dateOrNull(r.ticket_expire),
+  name: str(r.name), tickets: toTickets(r.tickets),
   targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), homework: str(r.homework),
   purpose: str(r.purpose), goal: str(r.goal), hobby: str(r.hobby), intakeBody: str(r.intake_body),
-  stretchRemain: Number(r.stretch_remain ?? 0), stretchExpire: dateOrNull(r.stretch_expire),
 });
 const toClient = (r: Row): AdminClient => ({
   id: str(r.id), code: str(r.code), userId: typeof r.user_id === 'string' ? r.user_id : null,
   name: str(r.name), kana: str(r.kana), gender: str(r.gender), phone: str(r.phone), email: str(r.email),
-  referrer: str(r.referrer), hobby: str(r.hobby), plan: str(r.plan),
-  ticketCount: num(r.ticket_count), ticketDate: dateOrNull(r.ticket_date),
-  remain: Number(r.remain ?? 0), carry: Number(r.carry ?? 0), carryExpire: dateOrNull(r.carry_expire),
-  stretchRemain: Number(r.stretch_remain ?? 0), stretchExpire: dateOrNull(r.stretch_expire),
+  referrer: str(r.referrer), hobby: str(r.hobby), tickets: toTickets(r.tickets),
   targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), consentOn: dateOrNull(r.consent_on),
   purpose: str(r.purpose), goal: str(r.goal), intakeBody: str(r.intake_body),
   posture: str(r.posture), homework: str(r.homework), internalNote: str(r.internal_note),
 });
 const clientRow = (i: AdminClientInput) => ({
   name: i.name, kana: orNull(i.kana), gender: orNull(i.gender), phone: orNull(i.phone), email: orNull(i.email),
-  referrer: orNull(i.referrer), hobby: orNull(i.hobby), plan: i.plan,
-  ticket_count: i.ticketCount, ticket_date: i.ticketDate,
-  remain: i.remain, carry: i.carry, carry_expire: i.carryExpire,
-  stretch_remain: i.stretchRemain, stretch_expire: i.stretchExpire,
+  referrer: orNull(i.referrer), hobby: orNull(i.hobby),
   target_label: orNull(i.targetLabel), target_date: i.targetDate, consent_on: i.consentOn,
   purpose: orNull(i.purpose), goal: orNull(i.goal), intake_body: orNull(i.intakeBody),
   posture: orNull(i.posture), homework: orNull(i.homework), internal_note: orNull(i.internalNote),
@@ -131,7 +131,7 @@ const clientRow = (i: AdminClientInput) => ({
 const toAdminSession = (r: Row): AdminSession => ({
   id: str(r.id), clientId: str(r.client_id), sessionDate: str(r.session_date), type: str(r.type), status: str(r.status),
   consumed: Number(r.consumed ?? 0),
-  consumedFrom: r.consumed_from === 'remain' || r.consumed_from === 'carry' || r.consumed_from === 'stretch' ? r.consumed_from : null,
+  consumedTicketId: typeof r.consumed_ticket === 'string' ? r.consumed_ticket : null,
   fee: Number(r.fee ?? 0), amount: Number(r.amount ?? 0), condition: str(r.condition), menu: str(r.menu),
   homecare: str(r.homecare), share: r.share !== false, note: str(r.note),
 });
@@ -160,22 +160,19 @@ async function listLogs<T>(table: string, map: (r: Row) => T, userId?: string): 
 const supabaseKarteStore: KarteStore = {
   async getClient(id) {
     const sb = await getClient();
-    const row = unwrap(await sb.from('clients').select('*').eq('id', id).maybeSingle()) as Row | null;
+    const row = unwrap(await sb.from('clients').select('*, tickets(*)').eq('id', id).maybeSingle()) as Row | null;
     if (!row) throw new Error('カルテが見つかりません。');
     return toClient(row);
   },
-  async saveCounters(id, k) {
+  async saveTickets(changed) {
     const sb = await getClient();
-    check(await sb.from('clients').update({
-      remain: k.remain, carry: k.carry, carry_expire: k.carryExpire,
-      stretch_remain: k.stretchRemain, stretch_expire: k.stretchExpire,
-    }).eq('id', id));
+    for (const t of changed) check(await sb.from('tickets').update({ remain: t.remain }).eq('id', t.id));
   },
   async insertSession(r) {
     const sb = await getClient();
     check(await sb.from('sessions').insert({
       client_id: r.clientId, session_date: r.sessionDate, type: r.type, status: r.status,
-      consumed: r.consumed, consumed_from: r.consumedFrom, fee: r.fee, amount: r.amount,
+      consumed: r.consumed, consumed_ticket: r.consumedTicketId, fee: r.fee, amount: r.amount,
       condition: orNull(r.condition), menu: orNull(r.menu), homecare: orNull(r.homecare), share: r.share, note: orNull(r.note),
     }));
   },
@@ -446,18 +443,18 @@ export const supabaseApi: MemberApi = {
   /* --- カルテ --- */
   async adminListClients() {
     const sb = await getClient();
-    return (unwrap(await sb.from('clients').select('*').order('code')) as Row[]).map(toClient);
+    return (unwrap(await sb.from('clients').select('*, tickets(*)').order('code')) as Row[]).map(toClient);
   },
   async adminSaveClient(input: AdminClientInput) {
     const sb = await getClient();
     if (!input.name.trim()) throw new Error('お名前を入力してください。');
     if (input.id) {
-      return toClient(unwrap(await sb.from('clients').update(clientRow(input)).eq('id', input.id).select().single()) as Row);
+      return toClient(unwrap(await sb.from('clients').update(clientRow(input)).eq('id', input.id).select('*, tickets(*)').single()) as Row);
     }
     // コードは、いまの最大の番号 + 1（同時に作ると重なるが、DB の一意制約で止まる）
     const codes = (unwrap(await sb.from('clients').select('code')) as Row[]).map((r) => Number(/^TNK-(\d+)$/.exec(str(r.code))?.[1] ?? 0));
     const code = `TNK-${String(Math.max(0, ...codes) + 1).padStart(4, '0')}`;
-    return toClient(unwrap(await sb.from('clients').insert({ ...clientRow(input), code }).select().single()) as Row);
+    return toClient(unwrap(await sb.from('clients').insert({ ...clientRow(input), code }).select('*, tickets(*)').single()) as Row);
   },
   async adminDeleteClient(id) {
     const sb = await getClient();
@@ -473,7 +470,24 @@ export const supabaseApi: MemberApi = {
   adminRecordSession: (clientId: string, input: SessionRecordInput) =>
     recordSession(supabaseKarteStore, clientId, input, todayLocal()),
   adminDeleteSession: (sessionId) => removeSession(supabaseKarteStore, sessionId),
-  adminRollMonth: (clientId) => closeMonth(supabaseKarteStore, clientId, todayLocal()),
+  async adminAddTicket(clientId, input) {
+    const sb = await getClient();
+    const t = ticketFromInput('', input);
+    check(await sb.from('tickets').insert({
+      client_id: clientId, kind: t.kind, label: t.label, total: t.total, remain: t.remain,
+      minutes: t.minutes, purchased_on: t.purchasedOn, expires_on: t.expiresOn,
+    }));
+  },
+  async adminUpdateTicket(t) {
+    const sb = await getClient();
+    check(await sb.from('tickets').update({
+      label: t.label, total: t.total, remain: t.remain, purchased_on: t.purchasedOn, expires_on: t.expiresOn,
+    }).eq('id', t.id));
+  },
+  async adminDeleteTicket(ticketId) {
+    const sb = await getClient();
+    check(await sb.from('tickets').delete().eq('id', ticketId));
+  },
   async adminLinkClient(clientId, email) {
     const sb = await getClient();
     check(await sb.rpc('link_client', { p_client: clientId, p_email: email.trim() }));
