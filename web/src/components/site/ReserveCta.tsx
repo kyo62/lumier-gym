@@ -70,7 +70,7 @@ export function ReserveCta() {
                 </li>
               ))}
             </ul>
-            <p className="mt-6 text-xs leading-7 text-muted">{booking.firstVisit.phoneNote}</p>
+            {booking.firstVisit.phoneNote ? <p className="mt-6 text-xs leading-7 text-muted">{booking.firstVisit.phoneNote}</p> : null}
             <p className="mt-3 text-[11px] leading-6 text-muted">
               {booking.firstVisit.privacyNote}
               <TextLink href="/privacy">プライバシーポリシー</TextLink>
@@ -86,7 +86,7 @@ export function ReserveCta() {
           {!booking.squareUrl ? (
             <p className="mt-6 text-xs leading-7 text-muted">
               {/* Squareの予約ページを作成したら config/site.ts の booking.squareUrl に設定すると、この表示は消えます */}
-              2回目以降の方も、LINEまたはお電話でご予約ください。
+              2回目以降の方も、LINEまたはメールでご予約ください。
             </p>
           ) : null}
         </Reveal>
