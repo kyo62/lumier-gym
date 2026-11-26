@@ -30,9 +30,16 @@ type State =
   | { status: 'signedIn'; me: Me }
   | { status: 'error'; message: string };
 
+/** 通信が止まったとき、「読み込み中」のまま固まらないよう、一定時間で打ち切る */
+const LOAD_TIMEOUT_MS = 15_000;
+const timeout = () =>
+  new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('接続に時間がかかっています。通信状況をご確認のうえ、ページを再読み込みしてください。解決しないときは、サロンまでご連絡ください。')), LOAD_TIMEOUT_MS),
+  );
+
 async function loadState(): Promise<State> {
   try {
-    const me = await api.getMe();
+    const me = await Promise.race([api.getMe(), timeout()]);
     return me ? { status: 'signedIn', me } : { status: 'signedOut' };
   } catch (e) {
     return { status: 'error', message: e instanceof Error ? e.message : '読み込めませんでした。' };
