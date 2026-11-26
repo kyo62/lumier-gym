@@ -25,7 +25,7 @@ export function Access() {
                   {site.address.prefecture}
                   {site.address.city}
                   <br />
-                  <span className="text-xs text-muted">{site.address.street}</span>
+                  {site.address.street}
                 </dd>
               </div>
               <div className="grid grid-cols-[5.5rem_1fr] gap-4 py-5">
