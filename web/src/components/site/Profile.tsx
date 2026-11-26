@@ -37,8 +37,9 @@ export function Profile() {
             )}
 
             <div className="mt-6">
-              <p className="font-serif text-xl tracking-[0.12em]">{profile.name}</p>
-              <p className="mt-1.5 text-sm">{profile.nameJa}</p>
+              <p className="text-[11px] tracking-[0.3em] text-muted">{profile.nameKanaJa}</p>
+              <p className="mt-1.5 font-serif text-2xl tracking-[0.12em]">{profile.nameJa}</p>
+            <p className="mt-1.5 text-xs tracking-[0.2em] text-muted">{profile.nameEn}</p>
               <p className="mt-3 text-[11px] tracking-wider text-muted">{profile.role}</p>
               <p className="mt-1 text-[11px] tracking-wider text-brass tnum">指導歴 {years}年</p>
             </div>
