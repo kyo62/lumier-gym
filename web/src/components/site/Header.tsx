@@ -14,6 +14,7 @@ const links = [
   { href: '#price', label: 'メニュー・料金' },
   { href: '#profile', label: 'プロフィール' },
   { href: '#access', label: 'アクセス' },
+  { href: '/member', label: '会員ページ' },
 ];
 
 export function Header() {
