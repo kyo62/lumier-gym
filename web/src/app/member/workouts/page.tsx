@@ -11,7 +11,7 @@ import { Button, Card, Field, Loading, Notice, PageTitle, inputClass, useAsync, 
 export default function WorkoutsPage() {
   return (
     <>
-      <PageTitle eyebrow="Record" title="トレーニングの記録" />
+      <PageTitle eyebrow="Record" title="自主トレの記録" />
       <RecordTabs />
       <ConsentGate>
         <WorkoutsContent />
