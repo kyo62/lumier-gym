@@ -30,8 +30,19 @@ export default function KartePage() {
     <div className="space-y-6">
       <PageTitle eyebrow="Karte" title="カルテ" />
 
-      <Card>
-        <h2 className="mb-4 text-base">回数券</h2>
+      {s.nextVisitOn && s.nextVisitOn >= today ? (
+<Card>
+<h2 className="mb-3 text-base">次回のご予約</h2>
+<p className="text-lg">
+{formatDateFullJa(s.nextVisitOn)}
+{s.nextVisitTime ? <span className="ml-2">{s.nextVisitTime}〜</span> : null}
+</p>
+<p className="mt-2 text-[11px] leading-5 text-muted">変更・キャンセルは、LINEでお知らせください。</p>
+</Card>
+) : null}
+
+<Card>
+<h2 className="mb-4 text-base">回数券</h2>
         {s.tickets.length === 0 ? (
           <p className="text-sm leading-7 text-muted">いま使える回数券はありません。ご希望の際は、LINEまたはお電話でお知らせください。</p>
         ) : (
