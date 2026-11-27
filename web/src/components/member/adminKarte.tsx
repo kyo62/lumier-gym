@@ -23,7 +23,7 @@ const intOr0 = (v: string) => {
 type Draft = Omit<AdminClientInput, 'id'>;
 const draftOf = (c: AdminClient): Draft => ({
   name: c.name, kana: c.kana, gender: c.gender, phone: c.phone, email: c.email, referrer: c.referrer, hobby: c.hobby,
-  targetLabel: c.targetLabel, targetDate: c.targetDate,
+  targetLabel: c.targetLabel, targetDate: c.targetDate, nextVisitOn: c.nextVisitOn, nextVisitTime: c.nextVisitTime,
   consentOn: c.consentOn, purpose: c.purpose, goal: c.goal, intakeBody: c.intakeBody, posture: c.posture,
   homework: c.homework, internalNote: c.internalNote,
 });
@@ -51,7 +51,7 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
 
   const text = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setDraft((d) => ({ ...d, [k]: e.target.value }));
-  const date = (k: 'targetDate' | 'consentOn') => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const date = (k: 'targetDate' | 'consentOn' | 'nextVisitOn') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setDraft((d) => ({ ...d, [k]: nullIfEmpty(e.target.value) }));
 
   /** いちばん新しい回数を読み直してから、入力した項目を保存する（記録で変わった回数を、上書きしない） */
@@ -110,7 +110,16 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
         </div>
       </Card>
 
-      <TicketSection client={client} reload={reload} />
+      <Card>
+<h2 className="mb-1 text-base">次回のご予約</h2>
+<p className="mb-4 text-[11px] leading-5 text-muted">入れると、会員のカルテに「次回のご予約」として表示されます。空にすると非表示になります。予約カレンダーとは連動しないので、ここは手で入れます。</p>
+<div className="grid grid-cols-2 gap-3">
+<Field label="日付" htmlFor="c-nv-on"><input id="c-nv-on" type="date" value={draft.nextVisitOn ?? ''} onChange={date('nextVisitOn')} className={inputClass} /></Field>
+<Field label="時刻" htmlFor="c-nv-time"><input id="c-nv-time" type="time" value={draft.nextVisitTime} onChange={text('nextVisitTime')} className={inputClass} /></Field>
+</div>
+</Card>
+
+<TicketSection client={client} reload={reload} />
 
       <Card>
         <h2 className="mb-1 text-base">目標・問診・ホームケア</h2>
