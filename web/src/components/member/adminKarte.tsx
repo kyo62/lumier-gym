@@ -104,7 +104,7 @@ function Editor({ client, sessions, reload }: { client: AdminClient; sessions: A
             <Field label="電話" htmlFor="c-phone"><input id="c-phone" inputMode="tel" value={draft.phone} onChange={text('phone')} className={inputClass} /></Field>
           </div>
           <Field label="メールアドレス" htmlFor="c-email"><input id="c-email" type="email" value={draft.email} onChange={text('email')} className={inputClass} /></Field>
-          <Field label="ご紹介者（男性のお客様は必須）" htmlFor="c-ref"><input id="c-ref" value={draft.referrer} onChange={text('referrer')} className={inputClass} /></Field>
+          <Field label="ご紹介者（あれば）" htmlFor="c-ref"><input id="c-ref" value={draft.referrer} onChange={text('referrer')} className={inputClass} /></Field>
           <Field label="趣味・競技・生活" htmlFor="c-hobby"><input id="c-hobby" value={draft.hobby} onChange={text('hobby')} className={inputClass} /></Field>
           <Field label="個人情報の取扱い 同意日" htmlFor="c-consent"><input id="c-consent" type="date" value={draft.consentOn ?? ''} onChange={date('consentOn')} className={inputClass} /></Field>
         </div>
