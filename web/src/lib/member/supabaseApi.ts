@@ -110,21 +110,24 @@ const toTickets = (v: unknown): Ticket[] =>
   (Array.isArray(v) ? (v as Row[]) : []).map(toTicket).sort((a, b) => ((a.expiresOn ?? '9999') < (b.expiresOn ?? '9999') ? -1 : 1));
 const toStatus = (r: Row): MyStatus => ({
   name: str(r.name), tickets: toTickets(r.tickets),
-  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), homework: str(r.homework),
+  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date),
+  nextVisitOn: dateOrNull(r.next_visit_on), nextVisitTime: str(r.next_visit_time).slice(0, 5), homework: str(r.homework),
   purpose: str(r.purpose), goal: str(r.goal), hobby: str(r.hobby), intakeBody: str(r.intake_body),
 });
 const toClient = (r: Row): AdminClient => ({
   id: str(r.id), code: str(r.code), userId: typeof r.user_id === 'string' ? r.user_id : null,
   name: str(r.name), kana: str(r.kana), gender: str(r.gender), phone: str(r.phone), email: str(r.email),
   referrer: str(r.referrer), hobby: str(r.hobby), tickets: toTickets(r.tickets),
-  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date), consentOn: dateOrNull(r.consent_on),
+  targetLabel: str(r.target_label), targetDate: dateOrNull(r.target_date),
+  nextVisitOn: dateOrNull(r.next_visit_on), nextVisitTime: str(r.next_visit_time).slice(0, 5), consentOn: dateOrNull(r.consent_on),
   purpose: str(r.purpose), goal: str(r.goal), intakeBody: str(r.intake_body),
   posture: str(r.posture), homework: str(r.homework), internalNote: str(r.internal_note),
 });
 const clientRow = (i: AdminClientInput) => ({
   name: i.name, kana: orNull(i.kana), gender: orNull(i.gender), phone: orNull(i.phone), email: orNull(i.email),
   referrer: orNull(i.referrer), hobby: orNull(i.hobby),
-  target_label: orNull(i.targetLabel), target_date: i.targetDate, consent_on: i.consentOn,
+  target_label: orNull(i.targetLabel), target_date: i.targetDate,
+  next_visit_on: i.nextVisitOn, next_visit_time: orNull(i.nextVisitTime), consent_on: i.consentOn,
   purpose: orNull(i.purpose), goal: orNull(i.goal), intake_body: orNull(i.intakeBody),
   posture: orNull(i.posture), homework: orNull(i.homework), internal_note: orNull(i.internalNote),
 });
