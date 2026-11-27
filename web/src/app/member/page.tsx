@@ -106,10 +106,10 @@ function TodayCard() {
   const { data, loading } = useAsync(load);
 
   const items = [
-    { href: '/member/activity', label: '自主トレ', count: data?.activities ?? 0 },
+    { href: '/member/activity', label: 'パーソナル', count: data?.activities ?? 0 },
     { href: '/member/body', label: '体組成', count: data?.body ?? 0 },
     { href: '/member/meals', label: '食事', count: data?.meals ?? 0 },
-    { href: '/member/workouts', label: 'トレーニング', count: data?.workouts ?? 0 },
+    { href: '/member/workouts', label: '自主トレ', count: data?.workouts ?? 0 },
   ];
 
   return (
