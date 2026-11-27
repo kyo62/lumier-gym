@@ -312,7 +312,7 @@ export const singlePlans: Plan[] = [
     unit: '/ 回',
     note: '店舗 60分',
     description: '単発・不定期でのご利用。',
-    features: ['60分', '入会金・事務手数料なし'],
+    features: ['入会金・事務手数料なし'],
   },
 ];
 
