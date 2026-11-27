@@ -17,14 +17,14 @@ import {
 import { MEAL_TYPE_LABELS, type BodyLog, type MealLog, type WorkoutLog } from '@/lib/member/types';
 import { Card, ConfirmButton, EmptyState } from './ui';
 
-/** 記録ページ共通の切り替え（体組成／食事／トレーニング） */
+/** 記録ページ共通の切り替え（パーソナル／体組成／食事／自主トレ） */
 export function RecordTabs() {
   const pathname = usePathname() ?? '';
   const items = [
-    { href: '/member/activity', label: '自主トレ' },
+    { href: '/member/activity', label: 'パーソナル' },
     { href: '/member/body', label: '体組成' },
     { href: '/member/meals', label: '食事' },
-    { href: '/member/workouts', label: 'トレーニング' },
+    { href: '/member/workouts', label: '自主トレ' },
   ];
   return (
     <div role="tablist" aria-label="記録の種類" className="mb-7 grid grid-cols-4 rounded-full border border-line bg-surface p-1">
@@ -244,32 +244,76 @@ export function MealList({ logs, onDelete }: { logs: MealLog[]; onDelete?: Delet
 
 export function WorkoutList({ logs, onDelete }: { logs: WorkoutLog[]; onDelete?: Deleter }) {
   if (logs.length === 0) return <EmptyState title="まだ記録がありません" />;
+  const days = groupByDate(logs);
+  // 年 → 月 → 日 の順にまとめる（新しい順）
+  const years = new Map<string, Map<string, typeof days>>();
+  for (const day of days) {
+    const [y, m] = day.date.split('-');
+    if (!years.has(y)) years.set(y, new Map());
+    const months = years.get(y)!;
+    if (!months.has(m)) months.set(m, []);
+    months.get(m)!.push(day);
+  }
+  const chevron = (
+    <span aria-hidden className="text-muted transition-transform group-open:rotate-90">
+      ›
+    </span>
+  );
   return (
-    <div className="space-y-6">
-      {groupByDate(logs).map(({ date, items }) => (
-        <div key={date}>
-          <DateHeading date={date} />
-          <ul className="space-y-2">
-            {items.map((l) => (
-              <Row key={l.id} onDelete={onDelete ? () => onDelete(l.id) : undefined}>
-                <p>
-                  <span className="font-medium">{l.exercise}</span>
-                  <span className="tnum ml-3 text-muted">
-                    {[
-                      l.weightKg !== null ? `${fmt(l.weightKg, 2)}kg` : null,
-                      l.reps !== null ? `${l.reps}回` : null,
-                      l.sets !== null ? `${l.sets}セット` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' × ')}
-                  </span>
-                </p>
-                <Note text={l.note} />
-              </Row>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <div className="space-y-3">
+      {Array.from(years.entries()).map(([y, months]) => {
+        const dayCount = Array.from(months.values()).reduce((n, d) => n + d.length, 0);
+        return (
+          <details key={y} className="group rounded-2xl border border-line bg-surface">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 [&::-webkit-details-marker]:hidden">
+              <span className="font-serif text-lg">{y}年</span>
+              <span className="tnum flex items-center gap-3 text-xs text-muted">
+                {dayCount}日
+                {chevron}
+              </span>
+            </summary>
+            <div className="space-y-2 px-3 pb-3">
+              {Array.from(months.entries()).map(([m, monthDays]) => (
+                <details key={m} className="group rounded-xl border border-line bg-canvas">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+                    <span className="text-sm font-medium">{Number(m)}月</span>
+                    <span className="tnum flex items-center gap-3 text-xs text-muted">
+                      {monthDays.length}日
+                      {chevron}
+                    </span>
+                  </summary>
+                  <div className="space-y-5 px-3 pb-4 pt-1">
+                    {monthDays.map(({ date, items }) => (
+                      <div key={date}>
+                        <DateHeading date={date} />
+                        <ul className="space-y-2">
+                          {items.map((l) => (
+                            <Row key={l.id} onDelete={onDelete ? () => onDelete(l.id) : undefined}>
+                              <p>
+                                <span className="font-medium">{l.exercise}</span>
+                                <span className="tnum ml-3 text-muted">
+                                  {[
+                                    l.weightKg !== null ? fmt(l.weightKg, 2) + 'kg' : null,
+                                    l.reps !== null ? l.reps + '回' : null,
+                                    l.sets !== null ? l.sets + 'セット' : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' × ')}
+                                </span>
+                              </p>
+                              <Note text={l.note} />
+                            </Row>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </details>
+        );
+      })}
     </div>
   );
 }
