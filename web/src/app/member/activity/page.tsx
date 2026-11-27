@@ -13,7 +13,7 @@ import { Button, Card, ConfirmButton, EmptyState, Field, Loading, Notice, PageTi
 export default function ActivityPage() {
   return (
     <>
-      <PageTitle eyebrow="Record" title="自主トレの記録" />
+      <PageTitle eyebrow="Record" title="パーソナルの記録" />
       <RecordTabs />
       <ConsentGate>
         <ActivityContent />
