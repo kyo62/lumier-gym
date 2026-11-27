@@ -11,9 +11,9 @@ export default function AdminIndexPage() {
 
   const items = [
     { href: '/member/admin/clients', icon: ClipboardList, title: 'カルテ', body: 'お客様のカルテと、セッションの記録を入力します。回数券の回数は、自動で計算されます（期限の近い券から使います）。' },
-    { href: '/member/admin/activity', icon: MessageCircle, title: '自主トレへのコメント', body: '会員が記録した自主トレに、コメントを送ります。コメントがまだない記録だけを、一覧できます。' },
+    { href: '/member/admin/activity', icon: MessageCircle, title: 'パーソナルへのコメント', body: '会員が記録したパーソナルに、コメントを送ります。コメントがまだない記録だけを、一覧できます。' },
     { href: '/member/admin/videos', icon: Video, title: '動画の管理', body: '復習用の動画を登録します。全員に見せるか、選んだ会員だけに見せるかを決められます。' },
-    { href: '/member/admin/members', icon: Users, title: '会員の記録', body: '会員が入力した体組成・食事・トレーニング・自主トレを、閲覧できます（閲覧のみ）。' },
+    { href: '/member/admin/members', icon: Users, title: '会員の記録', body: '会員が入力した体組成・食事・自主トレ・パーソナルを、閲覧できます（閲覧のみ）。' },
   ];
 
   return (
