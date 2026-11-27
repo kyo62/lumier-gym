@@ -94,7 +94,7 @@ function seed(): Db {
     activities: [],
     comments: [],
     clients: [
-      sampleClient({ id: 'demo-client-1', code: 'TNK-0001', name: '山田 花子（サンプル）', kana: 'ヤマダ ハナコ', tickets: [sampleTicket('t4', 20, 2)], targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', posture: '【見立て】巻き肩。呼吸が浅い', internalNote: '内部メモのサンプル' }),
+      sampleClient({ id: 'demo-client-1', code: 'TNK-0001', name: '山田 花子（サンプル）', kana: 'ヤマダ ハナコ', tickets: [sampleTicket('t4', 20, 2)], nextVisitOn: daysAgo(-5), nextVisitTime: '14:00', targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', posture: '【見立て】巻き肩。呼吸が浅い', internalNote: '内部メモのサンプル' }),
       sampleClient({ id: 'demo-client-2', code: 'TNK-0002', name: '田中 みどり（サンプル）', kana: 'タナカ ミドリ', tickets: [sampleTicket('t8', 80, 1), sampleTicket('t2', 5, 2)] }),
     ],
     karteSessions: [
@@ -112,7 +112,7 @@ function sampleTicket(kind: 't2' | 't4' | 't8', ago: number, remain: number): Ti
 function sampleClient(p: Partial<AdminClient> & Pick<AdminClient, 'id' | 'code' | 'name'>): AdminClient {
   return {
     userId: null, kana: '', gender: '女性', phone: '', email: '', referrer: '', hobby: '', tickets: [],
-    targetLabel: '', targetDate: null, consentOn: null, purpose: '', goal: '', intakeBody: '', posture: '', homework: '', internalNote: '',
+    targetLabel: '', targetDate: null, nextVisitOn: null, nextVisitTime: '', consentOn: null, purpose: '', goal: '', intakeBody: '', posture: '', homework: '', internalNote: '',
     ...p,
   };
 }
@@ -134,7 +134,7 @@ function sampleKarte(db: Db, userId: string, email: string) {
   const id = newId();
   db.clients.push(sampleClient({
     id, code: nextCode(db.clients), userId, name: 'お客様', email, tickets: [sampleTicket('t4', 20, 2), sampleTicket('t2', 55, 1)],
-    targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14',
+    targetLabel: '名古屋ウィメンズマラソン', targetDate: '2027-03-14', nextVisitOn: daysAgo(-7), nextVisitTime: '10:30',
     homework: '朝と夜に、息を吐く呼吸を3回。肩を大きく後ろに回す動きを10回。',
     purpose: '走ったあとの肩・背中の張りが気になる', goal: '3月のレースを、楽しく走り切る',
     hobby: 'ランニング、ヨガ', intakeBody: '肩のこわばり、息が浅い感じがする。',
@@ -461,7 +461,7 @@ export const demoApi: MemberApi = {
       name: c.name,
       tickets: c.tickets.filter((t) => ticketUsable(t, today)).map((t) => ({ ...t }))
         .sort((a, b) => ((a.expiresOn ?? '9999') < (b.expiresOn ?? '9999') ? -1 : 1)),
-      targetLabel: c.targetLabel, targetDate: c.targetDate,
+      targetLabel: c.targetLabel, targetDate: c.targetDate, nextVisitOn: c.nextVisitOn, nextVisitTime: c.nextVisitTime,
       homework: c.homework, purpose: c.purpose, goal: c.goal, hobby: c.hobby, intakeBody: c.intakeBody,
     };
     return status; // 見立て・内部メモ・紹介者・連絡先は、ここには入らない
