@@ -87,6 +87,9 @@ export type MyStatus = {
   tickets: Ticket[];
   targetLabel: string;
   targetDate: string | null;
+  /** 次回のご予約（日付・時刻。時刻は 14:00 の形。未定は空） */
+  nextVisitOn: string | null;
+  nextVisitTime: string;
   homework: string;
   purpose: string;
   goal: string;
@@ -119,6 +122,8 @@ export type AdminClient = {
   tickets: Ticket[];
   targetLabel: string;
   targetDate: string | null;
+  nextVisitOn: string | null;
+  nextVisitTime: string;
   consentOn: string | null;
   purpose: string;
   goal: string;
